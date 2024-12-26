@@ -206,7 +206,40 @@ def test_eff(window, popup_label, popup_button1, popup_button2, testing_progress
         scope_chan(Scope_ID,'C1','BANDWIDTH','20MHz')
         scope_chan(Scope_ID,'C2','BANDWIDTH','20MHz')
 
-        
+        first_loop = True
+        for linspace in range(0,25):
+
+            current_set = round(float(linspace*(tdc_current/24)),3)
+
+
+  
+            scope(Scope_ID,'STOP')
+            scope(Scope_ID,'CLEAR')
+            meas_result = []
+            
+            load(Load_ID, 'CURR', current_set)
+            time.sleep(0.2)
+            scope(Scope_ID,'FORCE','SINGLE')
+            time.sleep(0.2)
+
+            meas_result.append(current_set)
+            meas_result.append(scope_chan(Scope_ID,'P1','MEAS','out'))
+            meas_result.append(scope_chan(Scope_ID,'P5','MEAS','out'))
+            meas_result.append(supply(Supply_ID, 'MEAS', 'CURR'))
+            
+
+
+            current_set = current_set + curr_step
+
+            efficiency_results.append(meas_result)
+
+            if first_loop:
+                for repeat in range(18):
+                    efficiency_results.append([])
+                first_loop = False
+
+
+        '''
         first_result = []
         first_result.append(current_set)
         load(Load_ID, 'CURR', current_set)
@@ -229,14 +262,15 @@ def test_eff(window, popup_label, popup_button1, popup_button2, testing_progress
         current_set = current_set + curr_step
 
         efficiency_results.append(first_result)
-
+        '''
         
-        for repeat in range(18):
-            efficiency_results.append([])
+        #for repeat in range(18):
+        #    efficiency_results.append([])
 
-
+        '''
         while current_set < tdc_current:
-            
+            scope(Scope_ID,'STOP')
+            scope(Scope_ID,'CLEAR')
             meas_result = []
             meas_result.append(current_set)
             load(Load_ID, 'CURR', current_set)
@@ -256,9 +290,13 @@ def test_eff(window, popup_label, popup_button1, popup_button2, testing_progress
             current_set = current_set + curr_step
 
             efficiency_results.append(meas_result)
-        
-        for x in [tdc_current,max_current]:
+        '''
 
+
+
+        for x in [tdc_current,max_current]:
+            scope(Scope_ID,'STOP')
+            scope(Scope_ID,'CLEAR')
             meas_result = []
             meas_result.append(x)
             load(Load_ID, 'CURR', x)
@@ -584,18 +622,18 @@ def test_transient(window, popup_label, popup_button1, popup_button2, testing_pr
             load(Load_ID, 'RISE', 'MAX')
             load(Load_ID, 'FALL', 'MAX')
             load(Load_ID, 'REPEAT', '0')
-
-            scope(Scope_ID,'AUTOSETUP')
+            
             #time.sleep(0.3)
-            scope(Scope_ID,'TDIV',f'{tscale}')
-
+            
             scope_chan(Scope_ID,'C3','TRIGCHANNEL','POS')
             scope_chan(Scope_ID,'C3','ATTEN','6.03')
             scope_chan(Scope_ID,'C3','TRIGLEVEL', float((3*max_current)/4)) #3/4 is the current level
             #scope_chan(Scope_ID,'C3','VOFFSET',f'-{float(3*max_current/4)}')
             supply(Supply_ID,'OUT','ON')
             load(Load_ID, 'OUT', 'ON')
-            time.sleep(0.3) #Actually neccessary
+            scope(Scope_ID,'AUTOSETUP')
+            scope(Scope_ID,'TDIV',f'{tscale}')
+            time.sleep(0.5) #Actually neccessary
 
 
             capture_waveforms(Scope_ID,'P1', 100, f'Running Transient Test... \n Step: {hertz_array[count]}Hz 50-100%', popup_label)
@@ -634,7 +672,7 @@ def test_transient(window, popup_label, popup_button1, popup_button2, testing_pr
 
         scope_chan(Scope_ID,'C3','TRIGCHANNEL','POS')
         scope_chan(Scope_ID,'C3','ATTEN','6.03')
-        scope_chan(Scope_ID,'C3','TRIGLEVEL', float(max_current/4))
+        scope_chan(Scope_ID,'C3','TRIGLEVEL', float(tdc_current/4))
         
         load(Load_ID, 'OUT', 'ON')
         #time.sleep(0.3)
@@ -753,7 +791,7 @@ def test_overcurrent(window, popup_label, popup_button1, popup_button2, testing_
 
         voltage_level = float(scope_chan(Scope_ID,'P1','MEAS','min'))
         overcurrent_level = float(max_current)
-        while (voltage_level >= float((output_voltage_nom*0.9)) or voltage_level > 0.5) and ((overcurrent_level+1) < maxpow/output_voltage_nom) and (overcurrent_level < 4*max_current):#350W is max of the chroma load. Overpower prot after that
+        while (voltage_level >= float((output_voltage_nom*0.9))) and ((overcurrent_level+1) < maxpow/output_voltage_nom) and (overcurrent_level < 4*max_current):#350W is max of the chroma load. Overpower prot after that
             stepsize = 0
             if max_current <10:
                 stepsize = 0.1

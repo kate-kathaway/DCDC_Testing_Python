@@ -2,6 +2,8 @@ import pyvisa
 import os
 from datetime import datetime
 
+
+
 def debug_config():
     rm = pyvisa.ResourceManager()
     resource_array = rm.list_resources()
@@ -94,3 +96,15 @@ rm.close()
 
 
 #woo more debug
+
+
+
+end = 1.8
+
+#Want this to take 24 steps. To the TDC current. LAst two are TDC and max.... well i guess lets see how good the steps are
+
+#for x in range(0,25):
+#
+#    step = round(float(x*(end/24)),3)
+#    print(step)
+
