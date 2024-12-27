@@ -165,7 +165,7 @@ def DCDC_main(window, start_test_button, popup_label, popup_button1, popup_butto
 
                 elif test_count == 1:
                     jitter_bool = False
-                    #test_ripple_jitter(window, popup_label, popup_button1, popup_button2, testing_progressbar, Scope_ID, Supply_ID, Load_ID, fsw, iout_nom, iout_max, folder_name_path, current_testing_list,input_voltage, jitter_bool)
+                    test_ripple_jitter(window, popup_label, popup_button1, popup_button2, testing_progressbar, Scope_ID, Supply_ID, Load_ID, fsw, iout_nom, iout_max, folder_name_path, current_testing_list,input_voltage, jitter_bool)
                     if transient_load_bool:
                         test_transient(window, popup_label, popup_button1, popup_button2, testing_progressbar, Scope_ID, Supply_ID, Load_ID, iout_nom, iout_max, folder_name_path)
                     test_overcurrent(window, popup_label, popup_button1, popup_button2, testing_progressbar, Scope_ID, Supply_ID, Load_ID, iout_max, folder_name_path, output_voltage_nom)
