@@ -235,6 +235,13 @@ class Scope:
 
         self.STOP()
 
+    def setupChannel(self, channel_main:str, high_val:float, low_val:float):
+        #New func, unsure if it will work
+        mean = high_val-low_val
+        self.write(f'{channel_main}:OFFSET -{mean}')
+        self.write(f'{channel_main}:VOLT_DIV {mean/4}')
+        self.OPC()
+
     
 class Supply:
     def __init__(self, rm, connection_ID:str, measurement_delay:float = 0.2):

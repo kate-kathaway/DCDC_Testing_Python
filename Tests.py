@@ -197,6 +197,7 @@ def test_eff(window, popup_label, popup_button1, popup_button2, testing_progress
 
         #Turn on Supply
         supply(Supply_ID, 'OUT', 'ON')
+        time.sleep(0.3)
         current_set = 0
         load(Load_ID, 'MODE', 'CCH')
         load(Load_ID, 'OUT', 'ON')
@@ -555,12 +556,14 @@ def test_transient(window, popup_label, popup_button1, popup_button2, testing_pr
         load(Load_ID, 'OUT', 'OFF')
         load(Load_ID,'CURR',f'{tdc_current}')
         supply(Supply_ID,'OUT','ON')
+        time.sleep(0.5)
         load(Load_ID, 'OUT', 'ON')
 
         #time.sleep(0.2)
 
         scope(Scope_ID,'RECALL','1')
         scope(Scope_ID,'AUTOSETUP')
+        time.sleep(0.5)
         supply(Supply_ID,'OUT','OFF')
         load(Load_ID, 'OUT', 'OFF')
         scope_chan(Scope_ID,'C3','TRIGCHANNEL','POS')
@@ -592,12 +595,13 @@ def test_transient(window, popup_label, popup_button1, popup_button2, testing_pr
         
             supply(Supply_ID,'OUT','ON')
             load(Load_ID, 'OUT', 'ON')
+            time.sleep(0.5)
             scope(Scope_ID,'AUTOSETUP')
             scope(Scope_ID,'TDIV',f'{tscale}')
             scope_chan(Scope_ID,'C3','TRIGCHANNEL','POS')
             scope_chan(Scope_ID,'C3','ATTEN','6.03')
             scope_chan(Scope_ID,'C3','TRIGLEVEL', float(max_current/4)) 
-            #scope_chan(Scope_ID,'C3','VOFFSET',f'-{float(max_current/4)}')
+            scope_chan(Scope_ID,'C3','VOFFSET',f'-{float(max_current/4)}')
 
 
             capture_waveforms(Scope_ID,'P1', 100, f'Running Transient Test... \n Step: {hertz_array[count]}Hz 0-50% ', popup_label)
@@ -622,16 +626,18 @@ def test_transient(window, popup_label, popup_button1, popup_button2, testing_pr
             load(Load_ID, 'RISE', 'MAX')
             load(Load_ID, 'FALL', 'MAX')
             load(Load_ID, 'REPEAT', '0')
+            supply(Supply_ID,'OUT','ON')
+            time.sleep(0.5)
+            load(Load_ID, 'OUT', 'ON')
+            scope(Scope_ID,'AUTOSETUP')
+            
             
             #time.sleep(0.3)
             
             scope_chan(Scope_ID,'C3','TRIGCHANNEL','POS')
             scope_chan(Scope_ID,'C3','ATTEN','6.03')
             scope_chan(Scope_ID,'C3','TRIGLEVEL', float((3*max_current)/4)) #3/4 is the current level
-            #scope_chan(Scope_ID,'C3','VOFFSET',f'-{float(3*max_current/4)}')
-            supply(Supply_ID,'OUT','ON')
-            load(Load_ID, 'OUT', 'ON')
-            scope(Scope_ID,'AUTOSETUP')
+            scope_chan(Scope_ID,'C3','VOFFSET',f'-{float(3*max_current/4)}')
             scope(Scope_ID,'TDIV',f'{tscale}')
             time.sleep(0.5) #Actually neccessary
 
@@ -657,6 +663,7 @@ def test_transient(window, popup_label, popup_button1, popup_button2, testing_pr
         #Transient load VIN
         load(Load_ID, 'OUT', 'OFF')
         supply(Supply_ID,'OUT','ON')
+        time.sleep(0.5)
 
         load(Load_ID, 'L1', '0')
         load(Load_ID, 'L2', f'{tdc_current}')
@@ -666,17 +673,21 @@ def test_transient(window, popup_label, popup_button1, popup_button2, testing_pr
         load(Load_ID, 'FALL', 'MAX')
         load(Load_ID, 'REPEAT', '0')
         scope(Scope_ID,'TDIV','0.5ms')
+
+        load(Load_ID, 'OUT', 'ON')
+        time.sleep(0.3)
+        scope(Scope_ID,'AUTOSETUP')
+
         
         scope_chan(Scope_ID,'C2','TRACETOGGLE','ON')
-        scope_chan(Scope_ID,'C1','TRACETOGGLE','OFF')
+        
 
         scope_chan(Scope_ID,'C3','TRIGCHANNEL','POS')
         scope_chan(Scope_ID,'C3','ATTEN','6.03')
         scope_chan(Scope_ID,'C3','TRIGLEVEL', float(tdc_current/4))
         
-        load(Load_ID, 'OUT', 'ON')
-        #time.sleep(0.3)
-        scope(Scope_ID,'AUTOSETUP')
+        
+        scope_chan(Scope_ID,'C1','TRACETOGGLE','OFF')
         #time.sleep(0.3)
         scope(Scope_ID,'TDIV','0.5ms')
         #time.sleep(0.3)
@@ -754,6 +765,7 @@ def test_overcurrent(window, popup_label, popup_button1, popup_button2, testing_
         load(Load_ID, 'T2', '100ms')
         load(Load_ID, 'OUT', 'OFF')
         supply(Supply_ID,'OUT','ON')
+        time.sleep(0.5)
 
 
         load(Load_ID, 'L1', '0')
@@ -951,6 +963,7 @@ def test_vds(window, popup_label, popup_button1, popup_button2, testing_progress
             popup_label.config(text = f'Running VDS {vdslowhigh} Test.... \n Step : Transient Load')
             
             supply(Supply_ID,'OUT','ON')
+            time.sleep(0.5)
 
             load(Load_ID, 'MODE', 'CCDH')
             load(Load_ID, 'L1', '0')
@@ -1119,6 +1132,7 @@ def test_deadtime(window, popup_label, popup_button1, popup_button2, testing_pro
             #scope(Scope_ID,'TRIGDELAY',f'-{1/(3*fsw)}')
             load(Load_ID, 'MODE', 'CCH')
             supply(Supply_ID,'OUT','ON')
+            time.sleep(0.5)
             load(Load_ID,'OUT','OFF')
             capture_mult = 1
             if current != 'max':

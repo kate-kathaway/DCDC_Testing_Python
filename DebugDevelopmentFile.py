@@ -8,6 +8,8 @@ def debug_config():
     rm = pyvisa.ResourceManager()
     resource_array = rm.list_resources()
 
+    #print(resource_array)
+
     resource_list = []
     resource_alias_list = []
     python_path = os.getcwd()
@@ -29,6 +31,7 @@ def debug_config():
         try:
             resource = rm.open_resource(resource_info.resource_name)
             user_ID = resource.query(('*IDN?'))
+            #print(user_ID)
             user_ID_split = user_ID.split(',')
             resource.close()
         except Exception as e:
@@ -45,7 +48,7 @@ def debug_config():
     f.close()
     rm.close()
 
-#debug_config()
+debug_config()
 '''
 
 global rm

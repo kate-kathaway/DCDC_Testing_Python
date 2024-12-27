@@ -306,7 +306,13 @@ def scope(scope_name:str,operation:str,value=None):
                 Scope.query('*OPC?')
             case str(operation) if "AUTOSETUP" in operation:
                 #Auto-sets up the scope. Then waits. Built-in
-                Scope.write('ASET')
+                Scope.write('C1:ASET')
+                Scope.query('*OPC?')
+                Scope.write('C2:ASET')
+                Scope.query('*OPC?')
+                Scope.write('C3:ASET')
+                Scope.query('*OPC?')
+                Scope.write('C4:ASET')
                 Scope.query('*OPC?')
             case str(operation) if "SAMPLERATEMAX" in operation:
                 #Sets the samplerate of catures to the maximum. No specific setting is available
