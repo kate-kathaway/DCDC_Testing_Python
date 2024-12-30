@@ -8,6 +8,8 @@ from Tests import set_wait, set_skip
 import os
 from DebugDevelopmentFile import debug_config
 
+from EquipmentClasses import *
+
 '''
 NOTES:
 
@@ -43,7 +45,6 @@ def get_variables():
     """
     
     Grabs all variables from the user-input GUI
-
         
     """
     try:
@@ -51,29 +52,33 @@ def get_variables():
         popup_label.config(background = 'white')
         start_test_button.config(state = 'disabled')
 
-        LDO_bool = LDO_test_var.get()
-    
-        SWM_bool = SWM_test_var.get()
 
-        EFF_bool = EFF_test_var.get()
-        
-        DEA_bool = DEA_test_var.get()
-        
-        TRN_bool = TRN_test_var.get()
+        device = DUT()
 
-        if True in [LDO_bool, SWM_bool, EFF_bool, DEA_bool, TRN_bool]:
+        device.test_list.append(EFF_test_var.get())
+        device.test_list.append(LDO_test_var.get())
+        device.test_list.append(SWM_test_var.get())
+        device.test_list.append(DEA_test_var.get())
+        device.test_list.append(TRN_test_var.get())
+
+        if True in device.test_list:
             pass
         else:
             raise Exception('No Test Selected')
         
 
         #Gives index list position. Perfect. If not chosen, returns -1
-        scope_pos = scope_equip_cbox.current()
-        supply_pos = supply_equip_cbox.current()
-        load_pos = load_equip_cbox.current()
 
-        if -1 in [scope_pos, supply_pos, load_pos]:
+       
+        if -1 in [scope_equip_cbox.current(), supply_equip_cbox.current(), load_equip_cbox.current()]:
             raise Exception('Equipment not selected')
+        
+        scope_connection_ID = resource_list[scope_equip_cbox.current()]
+
+        supply_connection_ID = resource_list[supply_equip_cbox.current()]
+     
+        load_connection_ID = resource_list[load_equip_cbox.current()]
+
 
         #print (resource_list[scope_pos], resource_list[supply_pos], resource_list[load_pos])
 
@@ -82,64 +87,83 @@ def get_variables():
         max_load_bool = max_load_var.get()
         transient_load_bool = transient_load_var.get()
 
-        if True in [min_load_bool, tdc_load_bool, max_load_bool, transient_load_bool]:
+        current_testing_list_bool = [min_load_bool, tdc_load_bool, max_load_bool, transient_load_bool]
+
+        
+
+        if True in current_testing_list_bool:
             pass
         else:
              raise Exception('No load points selected')
+        
 
-        device_name = name_entry_var.get()
+        for index, value in enumerate(current_testing_list_bool):
+            if value and index == 0:
+                device.load_list.append('min')
+            elif value and index == 1:
+                device.load_list.append('tdc')
+            elif value and index == 2:
+                device.load_list.append('max')
+            elif value and index == 3:
+                device.load_list.append('transient')
+            else:
+                continue
 
-        if len(device_name) == 0:
+        device.name = name_entry_var.get()
+
+        if len(device.name) == 0:
             raise Exception('Device name missing')
 
 
-        extfets_bool = extfets_entry_var.get()
+        device.exfets = extfets_entry_var.get()
 
 
-        input_voltage = voltage_input_entry_var.get()
-        supply_voltage = voltage_supply_entry_var.get()
-        output_voltage_max = round(voltage_out_nom_entry_var.get() * 1.05,3)
-        output_voltage_nom = voltage_out_nom_entry_var.get()
-        iout_max = iout_max_entry_var.get()
-        iout_nom = iout_nom_entry_var.get()
+        device.device_input_voltage = voltage_input_entry_var.get()
+        device.supply_input_voltage = voltage_supply_entry_var.get()
+
+
+        device.output_voltage_max = round(voltage_out_nom_entry_var.get() * 1.05,3)
+        device.output_voltage_nom = voltage_out_nom_entry_var.get()
+        device.output_current_max = iout_max_entry_var.get()
+        device.output_current_nom = iout_nom_entry_var.get()
         fsw_khrts = freq_khrts_entry_var.get()
 
-        fsw = float(fsw_khrts*1000)
+        device.frequency = float(fsw_khrts*1000)
 
 
-        for entry_var in [input_voltage, supply_voltage, output_voltage_max, output_voltage_nom, iout_max,iout_nom]:
+        for entry_var in [device.device_input_voltage, device.supply_input_voltage, device.output_voltage_max, device.output_voltage_nom, device.output_current_max, device.output_current_nom]:
             if entry_var <= float(0):
                 raise Exception('Entry field unfilled or negative')
 
 
-        if LDO_bool:
-            fsw = float(100000)
+        if device.test_list[1]:
+            device.frequency = float(100000)
 
 
 
-        if LDO_bool:
+        if device.test_list[1]:
             rip_test_label.config(background = 'white')
             if transient_load_bool:
                 tra_test_label.config(background = 'white')
             ovc_test_label.config(background = 'white')
 
-        if SWM_bool:
+        if device.test_list[2]:
             rip_test_label.config(background = 'white')
             jit_test_label.config(background = 'white')
             if transient_load_bool:
                 tra_test_label.config(background = 'white')
             ovc_test_label.config(background = 'white')
             vds_test_label.config(background = 'white')
-        if EFF_bool:
+        if device.test_list[0]:
             eff_test_label.config(background = 'white')
-        if DEA_bool:
+        if device.test_list[3]:
             dea_test_label.config(background = 'white')
-        if TRN_bool:
+        if device.test_list[4]:
             trn_test_label.config(background = 'white')
 
 
         
-        testing_thread = threading.Thread(target=DCDC_main, args = [window, start_test_button, popup_label, popup_button1, popup_button2, testing_progressbar, LDO_bool, SWM_bool, EFF_bool, DEA_bool, TRN_bool, scope_pos, supply_pos, load_pos, min_load_bool, tdc_load_bool, max_load_bool, transient_load_bool, device_name, extfets_bool, input_voltage, supply_voltage, output_voltage_max, output_voltage_nom, iout_max, iout_nom, fsw, resource_list], daemon=True)
+        testing_thread = threading.Thread(target=DCDC_main, args = [window, start_test_button, popup_label, popup_button1, popup_button2, testing_progressbar, scope_connection_ID, supply_connection_ID, load_connection_ID, device], daemon=True)
         testing_thread.start()
 
 

@@ -1,5 +1,6 @@
 from datetime import datetime
-from EquipmentFuncs import *
+#from EquipmentClasses import *
+from EquipmentClasses import *
 import os
 import csv
 import time
@@ -27,7 +28,7 @@ def set_skip(value=False):
     global skip_var
     skip_var = value
 
-def listener(popup_button1, popup_button2, popup_button2_state:str, popup_label, test_text, testing_progressbar):
+def listener(popup_button1, popup_button2, popup_button2_state:str, popup_label, test_text:str, testing_progressbar):
     listen_val = get_wait()
     listen_skip = get_skip()
     popup_label.config(text = test_text)
@@ -164,7 +165,7 @@ def write_to_csv(folder_name_path:str, linenum:int, information, filename:str):
 
 
 
-def test_eff(window, popup_label, popup_button1, popup_button2, testing_progressbar, Scope_ID:str, Load_ID:str, Supply_ID:str, max_current:float, tdc_current:float):
+def test_eff(popup_label, popup_button1, popup_button2, testing_progressbar, scope:SCOPE, supply:SUPPLY, load:LOAD, device:DUT):
     """
     
     Efficiency test as defined in DC DC testing manual
@@ -179,59 +180,41 @@ def test_eff(window, popup_label, popup_button1, popup_button2, testing_progress
 
     def eff_main():
         popup_label.config(text = 'Running Efficiency Test....')
-        
-
-
-        load(Load_ID, 'OUT', 'OFF')
-        load(Load_ID, 'CURR', '0.1')
-        curr_step = 0
-        if max_current >= 10:
-            curr_step = 1
-        elif max_current <10 and max_current >= 5:
-            curr_step = 0.5
-        else:
-            curr_step = 0.1
-
 
         efficiency_results = []
 
-        #Turn on Supply
-        supply(Supply_ID, 'OUT', 'ON')
-        time.sleep(0.3)
-        current_set = 0
-        load(Load_ID, 'MODE', 'CCH')
-        load(Load_ID, 'OUT', 'ON')
+        load.mode('CC','H')
+        #load.autoCCMode(device)
+        load.staticCurrent('0')
+        supply.output(True)
+        load.output(True)
 
-        scope(Scope_ID,'RECALL','1')
-        scope(Scope_ID,'AUTOSETUP')
-        scope_chan(Scope_ID,'C1','BANDWIDTH','20MHz')
-        scope_chan(Scope_ID,'C2','BANDWIDTH','20MHz')
+        scope.recall(1)
+        #scope.autoSetup()
+        scope.setTrigger('C1','POS', device.output_voltage_nom)
+        scope.setupChannelPercent('C1', device.output_voltage_nom , 2)
+        scope.setupChannelPercent('C2', device.device_input_voltage, 2)
 
         first_loop = True
         for linspace in range(0,25):
 
-            current_set = round(float(linspace*(tdc_current/24)),3)
-
-
-  
-            scope(Scope_ID,'STOP')
-            scope(Scope_ID,'CLEAR')
             meas_result = []
+
+            scope.clearSweeps()
+
+            current_set = round(float(linspace*(device.output_current_nom/24)),3)
             
-            load(Load_ID, 'CURR', current_set)
-            time.sleep(0.2)
-            scope(Scope_ID,'FORCE','SINGLE')
-            time.sleep(0.2)
+            load.staticCurrent(current_set)
+            time.sleep(0.3)
+            scope.trigMode('SINGLE')
+            scope.waitUntilTrig(5)
+            scope.STOP()
 
             meas_result.append(current_set)
-            meas_result.append(scope_chan(Scope_ID,'P1','MEAS','out'))
-            meas_result.append(scope_chan(Scope_ID,'P5','MEAS','out'))
-            meas_result.append(supply(Supply_ID, 'MEAS', 'CURR'))
-            
-
-
-            current_set = current_set + curr_step
-
+            meas_result.append(scope.meas('P1','out'))
+            meas_result.append(scope.meas('P5','out'))
+            meas_result.append(supply.meas('CURR'))
+        
             efficiency_results.append(meas_result)
 
             if first_loop:
@@ -240,86 +223,25 @@ def test_eff(window, popup_label, popup_button1, popup_button2, testing_progress
                 first_loop = False
 
 
-        '''
-        first_result = []
-        first_result.append(current_set)
-        load(Load_ID, 'CURR', current_set)
-
-        time.sleep(0.2)
-        scope(Scope_ID,'FORCE','SINGLE')
-        time.sleep(0.5)
-
-        #first_result.append(load(Load_ID, 'MEAS', 'VOLT'))
-        first_result.append(scope_chan(Scope_ID,'P1','MEAS','out'))
-
-        scope_chan(Scope_ID,'C2','CHANGEP5','mean')
-
-        #first_result.append(supply(Supply_ID, 'MEAS', 'VOLT'))
-        first_result.append(scope_chan(Scope_ID,'P5','MEAS','out'))
-        first_result.append(supply(Supply_ID, 'MEAS', 'CURR'))
-        
-
-
-        current_set = current_set + curr_step
-
-        efficiency_results.append(first_result)
-        '''
-        
-        #for repeat in range(18):
-        #    efficiency_results.append([])
-
-        '''
-        while current_set < tdc_current:
-            scope(Scope_ID,'STOP')
-            scope(Scope_ID,'CLEAR')
+        for defined_point in [device.output_current_nom,device.output_current_max]:
             meas_result = []
-            meas_result.append(current_set)
-            load(Load_ID, 'CURR', current_set)
-            time.sleep(0.2)
-            scope(Scope_ID,'FORCE','SINGLE')
-            time.sleep(0.5)
-            
-            #meas_result.append(load(Load_ID, 'MEAS', 'VOLT'))
-            meas_result.append(scope_chan(Scope_ID,'P1','MEAS','out'))
 
-            #meas_result.append(supply(Supply_ID, 'MEAS', 'VOLT'))
-            meas_result.append(scope_chan(Scope_ID,'P5','MEAS','out'))
-            meas_result.append(supply(Supply_ID, 'MEAS', 'CURR'))
-            
+            scope.clearSweeps()
 
+            meas_result.append(defined_point)
+            load.staticCurrent(defined_point)
+            time.sleep(0.4)
+            scope.trigMode('SINGLE')
+            time.sleep(0.4)
+            scope.STOP()
 
-            current_set = current_set + curr_step
-
-            efficiency_results.append(meas_result)
-        '''
-
-
-
-        for x in [tdc_current,max_current]:
-            scope(Scope_ID,'STOP')
-            scope(Scope_ID,'CLEAR')
-            meas_result = []
-            meas_result.append(x)
-            load(Load_ID, 'CURR', x)
-            time.sleep(0.2)
-            scope(Scope_ID,'FORCE','SINGLE')
-            time.sleep(0.5)
-
-            #meas_result.append(load(Load_ID, 'MEAS', 'VOLT'))
-            meas_result.append(scope_chan(Scope_ID,'P1','MEAS','out'))
-
-            #meas_result.append(supply(Supply_ID, 'MEAS', 'VOLT'))
-            meas_result.append(scope_chan(Scope_ID,'P5','MEAS','out'))
-            meas_result.append(supply(Supply_ID, 'MEAS', 'CURR'))
-            
+            meas_result.append(scope.meas('P1','out'))
+            meas_result.append(scope.meas('P5','out'))
+            meas_result.append(supply.meas('CURR'))
 
             efficiency_results.append(meas_result)
 
-        supply(Supply_ID, 'OUT', 'OFF')
-        load(Load_ID, 'OUT', 'OFF')
-        load(Load_ID, 'CURR', '0')
-
-
+        discharge(device)
 
         with open(f'{python_path}\\{results_folder_name}\\efficiency.csv', 'w', newline='') as csvfile:
             writer = csv.writer(csvfile)
@@ -337,7 +259,7 @@ def test_eff(window, popup_label, popup_button1, popup_button2, testing_progress
 
 
 
-def test_ripple_jitter(window, popup_label, popup_button1, popup_button2, testing_progressbar, Scope_ID:str, Supply_ID:str, Load_ID:str, fsw:float, tdc_current:float, max_current:float, filepath:str, current_testing,input_voltage:float, jitter_bool:bool):
+def test_ripple_jitter(popup_label, popup_button1, popup_button2, testing_progressbar, scope:SCOPE, supply:SUPPLY, load:LOAD, device:DUT):
 
     """
     
@@ -387,117 +309,112 @@ def test_ripple_jitter(window, popup_label, popup_button1, popup_button2, testin
     def ripple_jitter_main():
         popup_label.config(text = 'Running Ripple Test.... \n Step: Setup')
 
-        load(Load_ID, 'MODE', 'CCH')
+        load.mode('CC','H')
         current_count = 0
+        current_point = 0.0
 
-        for current in current_testing:
+        current_list = device.makeLoadPointList('transient')
+
+        scope.recall(1)
+        #scope.autoSetup()
+        scope.horScale(float(1/device.frequency))
+        scope.sampleRate()
+        scope.setTrigger('C4','POS',float(device.device_input_voltage/2))
+
+        scope.traceToggle('C1', True)
+        scope.traceToggle('C2', True)
+        scope.traceToggle('C3', True)
+        scope.traceToggle('C4', True)
+
+        scope.setupChannelPercent('C1',device.output_voltage_nom,5)
+        scope.setupChannelPercent('C2',device.device_input_voltage,5)
+        scope.setupChannel('C4', device.device_input_voltage, 0.0)
+
+        for current in current_list:
             popup_label.config(text = f'Running Ripple Test.... \n Step: {current} Load')
-            load(Load_ID, 'OUT', 'OFF')
-            supply(Supply_ID,'OUT','ON')
+            load.output(False)
+            supply.output(True)
+            current_point = float(0)
+            
 
-            if current == 'min':
-                load(Load_ID,'OUT','OFF')
-                current_count = 0
-            elif current == 'tdc':
-                load(Load_ID,'CURR',tdc_current)
-                load(Load_ID,'OUT','ON')
+            if current == 'tdc':
+                current_point = device.output_current_nom
+                load.staticCurrent(current_point)
+                load.output(True)
                 current_count = 1
             elif current == 'max':
-                load(Load_ID,'CURR',max_current)
-                load(Load_ID,'OUT','ON')
+                current_point = device.output_current_max
+                load.staticCurrent(current_point)
+                load.output(True)
                 current_count = 2
-            else:
-                print('Incorrect array inputted for current')
 
+            scope.setupChannelPercent('C3',current_point,30)
 
+            scope.captureWaveforms('P1', 100, f'Running Ripple Test.... \n Step: {current} Load' , popup_label)
 
-            scope(Scope_ID,'RECALL','1')
-            scope(Scope_ID,'AUTOSETUP')
-            scope(Scope_ID,'TDIV',float(1/fsw))
-            scope(Scope_ID,'SAMPLERATEMAX')
-            scope_chan(Scope_ID,'C4','TRIGCHANNEL','POS')
-            scope_chan(Scope_ID,'C4','TRIGLEVEL', float(input_voltage/2))
-
-            scope_chan(Scope_ID,'C1','TRACETOGGLE','ON')
-            scope_chan(Scope_ID,'C2','TRACETOGGLE','ON')
-            scope_chan(Scope_ID,'C3','TRACETOGGLE','ON')
-            scope_chan(Scope_ID,'C4','TRACETOGGLE','ON')
-            scope_chan(Scope_ID,'C4','VDIV', f'{input_voltage/6}')
-            scope_chan(Scope_ID,'C4','VOFFSET', f'-{input_voltage/2}')
-
-            scope_chan(Scope_ID,'C1','BANDWIDTH','20MHz')
-            scope_chan(Scope_ID,'C2','BANDWIDTH','20MHz')
+            scope.traceToggle('C2', False)
+            scope.traceToggle('C4', False)
             
-            capture_waveforms(Scope_ID,'P1', 100, f'Running Ripple Test.... \n Step: {current} Load' , popup_label)
-            scope_chan(Scope_ID,'C2','TRACETOGGLE','OFF')
-            scope_chan(Scope_ID,'C4','TRACETOGGLE','OFF')
-            scope(Scope_ID,'OPC')
-            time.sleep(0.5)  #For some reason, while turning trace on, need to have a slight pause before a screenshot to register tracetoggle
 
             filename = f'01_Vout_{current}'
-            scope_screenshot(filepath,filename)
+            scope.screenshot(device.folder_name_path,filename)
 
+            scope.meas('P1','min')
 
-            p1_min = float(scope_chan(Scope_ID,'P1','MEAS','min'))
-            p2_mean = float(scope_chan(Scope_ID,'P2','MEAS','mean'))
-            p3_max = float(scope_chan(Scope_ID,'P3','MEAS','max'))
+            p1_min = scope.meas('P1','min')
+            p2_mean = scope.meas('P1','mean')
+            p3_max = scope.meas('P3','max')
 
             #write_to_csv(filepath, current_count+3, [f'{p1_min}',f'{p2_mean}', f'{p3_max}', f'{filepath}\\{filename}.png'],'Results')
-            write_to_csv(filepath, current_count+3, [f'{p3_max}',f'{p2_mean}', f'{p1_min}', f'{filepath}\\{filename}.png'],'Results') #Swapped order
+            write_to_csv(device.folder_name_path, current_count+3, [f'{p3_max}',f'{p2_mean}', f'{p1_min}', f'{device.folder_name_path}\\{filename}.png'],'Results') #Swapped order
 
+            scope.traceToggle('C2', True)
+            scope.traceToggle('C1', False)
 
-            scope_chan(Scope_ID,'C2','TRACETOGGLE','ON')
-            scope_chan(Scope_ID,'C1','TRACETOGGLE','OFF')
-
-            scope(Scope_ID,'OPC')
-            time.sleep(0.5)  #For some reason, while turning trace on, need to have a slight pause before a screenshot to register tracetoggle
-            #time.sleep(1)  #For some reason, while turning trace on, need to have a slight pause before a screenshot to register tracetoggle
-            scope(Scope_ID,'STOP')
-            scope(Scope_ID,'OPC')
             filename = f'04_Vin_{current}'
-            scope_screenshot(filepath,filename)
-            p4_min = float(scope_chan(Scope_ID,'P4','MEAS','min'))
-            p5_max = float(scope_chan(Scope_ID,'P5','MEAS','max'))
+            scope.screenshot(device.folder_name_path,filename)
+            p4_min = scope.meas('P4','min')
+            p5_max = scope.meas('P5','max')
 
-            write_to_csv(filepath, current_count+8, [f'{p5_max}',f'{p4_min}', f'{filepath}\\{filename}.png'],'Results')
+            write_to_csv(device.folder_name_path, current_count+8, [f'{p5_max}',f'{p4_min}', f'{device.folder_name_path}\\{filename}.png'],'Results')
 
 
-            if jitter_bool:
-                #popup_label.config(text = f'Running {current} Load Jitter Test')
+            if device.jitter_bool:
                 popup_label.config(text = f'Running Jitter Test.... \n Step: {current} Load')
 
+                scope.traceToggle('C1', False)
+                scope.traceToggle('C2', False)
+                scope.traceToggle('C4', True)
+ 
+                scope.persist(True)
 
-                scope_chan(Scope_ID,'C1','TRACETOGGLE','OFF')
-                scope_chan(Scope_ID,'C2','TRACETOGGLE','OFF')
-                scope_chan(Scope_ID,'C4','TRACETOGGLE','ON')
-                scope(Scope_ID,'PERSIST','true')
+                scope.setParam('P5','C3','MAX') #Changed from TOP to MAX. Seems like it makes way more sense
+                #scope.setParam('P5','C3','TOP')
 
-                scope_chan(Scope_ID,'C3','CHANGEP5','TOP')
-
-
-                capture_waveforms(Scope_ID,'P6', 2000, f'Running Jitter Test.... \n Step: {current} Load', popup_label )
+                scope.captureWaveforms('P6', 2000, f'Running Jitter Test.... \n Step: {current} Load', popup_label )
                 filename = f'08_Jitter_{current}'
-                scope(Scope_ID,'OPC')
-                #time.sleep(1)  #For some reason, while turning trace on, need to have a slight pause before a screenshot to register tracetoggle
-                scope_screenshot(filepath,filename)
-                p6_min = float(scope_chan(Scope_ID,'P6','MEAS','min'))
-                p6_mean = float(scope_chan(Scope_ID,'P6','MEAS','mean'))
-                p6_max = float(scope_chan(Scope_ID,'P6','MEAS','max'))
-                p5_min = float(scope_chan(Scope_ID,'P5','MEAS','min'))
-                p5_max = float(scope_chan(Scope_ID,'P5','MEAS','max'))
-                p5_stdev = float(scope_chan(Scope_ID,'P5','MEAS','sdev'))
 
 
-                write_to_csv(filepath, current_count+14, [f'{p6_min}',f'{p6_mean}', f'{p6_max}',f'{p5_min}', f'{p5_max}', f'{p5_stdev}',f'{filepath}\\{filename}.png'],'Results')
+                scope.screenshot(device.folder_name_path,filename)
+                p6_min = scope.meas('P6','min')
+                p6_mean = scope.meas('P6','mean')
+                p6_max = scope.meas('P6','max')
+                p5_min = scope.meas('P5','min')
+                p5_max = scope.meas('P5','max')
+                p5_stdev = scope.meas('P5','sdev')
+
+                write_to_csv(device.folder_name_path, current_count+14, [f'{p6_min}',f'{p6_mean}', f'{p6_max}',f'{p5_min}', f'{p5_max}', f'{p5_stdev}',f'{device.folder_name_path}\\{filename}.png'],'Results')
+
+                scope.persist(False)
+   
+
+            scope.traceToggle('C1', True)
+            scope.traceToggle('C2', True)
+            scope.traceToggle('C3', True)
+            scope.traceToggle('C4', True)
+        discharge(device)
 
 
-                scope(Scope_ID,'PERSIST','false')
-            else: 
-                continue
-
-            load(Load_ID,'OUT','OFF')
-            supply(Supply_ID,'OUT','OFF')
-            current_count = current_count+1
 
         
 
@@ -509,7 +426,7 @@ def test_ripple_jitter(window, popup_label, popup_button1, popup_button2, testin
 
 
 
-def test_transient(window, popup_label, popup_button1, popup_button2, testing_progressbar, Scope_ID:str, Supply_ID:str, Load_ID:str, tdc_current:float, max_current:float, filepath:str):
+def test_transient(popup_label, popup_button1, popup_button2, testing_progressbar, scope, supply, load, device):
     """
     
     Executes transient test as defined in DC DC testing manual
@@ -714,7 +631,7 @@ def test_transient(window, popup_label, popup_button1, popup_button2, testing_pr
 
 
 
-def test_overcurrent(window, popup_label, popup_button1, popup_button2, testing_progressbar, Scope_ID:str, Supply_ID:str, Load_ID:str, max_current:float, filepath:str, output_voltage_nom:float):
+def test_overcurrent(popup_label, popup_button1, popup_button2, testing_progressbar, scope, supply, load, device):
     """
     
     Executes overcurrent test as defined in DC DC testing manual
@@ -849,7 +766,7 @@ def test_overcurrent(window, popup_label, popup_button1, popup_button2, testing_
 
 
 
-def test_vds(window, popup_label, popup_button1, popup_button2, testing_progressbar, Scope_ID:str, Supply_ID:str, Load_ID:str, tdc_current:float, filepath:str, current_testing, input_voltage:float, extfets_bool:bool, transient_load_bool:bool):
+def test_vds(popup_label, popup_button1, popup_button2, testing_progressbar, scope, supply, load, device):
 
     """
     
@@ -1010,7 +927,7 @@ def test_vds(window, popup_label, popup_button1, popup_button2, testing_progress
                     
 
 
-def test_deadtime(window, popup_label, popup_button1, popup_button2, testing_progressbar, Scope_ID:str, Supply_ID:str, Load_ID:str, tdc_current:float, filepath:str, current_testing, input_voltage:float,output_voltage_nom:float, fsw:float, transient_load_bool):
+def test_deadtime(popup_label, popup_button1, popup_button2, testing_progressbar, scope, supply, load, device):
     """
     
     Executes deadtime test as defined in DC DC testing manual
@@ -1201,8 +1118,7 @@ def test_deadtime(window, popup_label, popup_button1, popup_button2, testing_pro
 
                     write_to_csv(filepath, 5+current_count+trig_count, [f'{p1_min}',f'{p1_mean}',f'{p1_max}',f'{p2_min}',f'{p2_mean}',f'{p2_max}', f'{filepath}\\{filename}.png'],'deadtime')
 
-                else:
-                    continue
+
         
         supply(Supply_ID,'OUT','OFF')
 
@@ -1283,7 +1199,7 @@ def test_deadtime(window, popup_label, popup_button1, popup_button2, testing_pro
 
 
 
-def test_turnonoff(window, popup_label, popup_button1, popup_button2, testing_progressbar, Scope_ID:str, Supply_ID:str, Load_ID:str, tdc_current:float, filepath:str, current_testing, input_voltage:float, output_voltage_nom:float):
+def test_turnonoff(popup_label, popup_button1, popup_button2, testing_progressbar, scope, supply, load, device):
     """
     
     Executes turn on and turn off tests as defined in DC DC testing manual
