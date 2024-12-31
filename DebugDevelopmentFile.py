@@ -1,10 +1,15 @@
 import pyvisa
 import os
 from datetime import datetime
+from EquipmentClasses import *
+import time
+
 
 def debug_config():
     rm = pyvisa.ResourceManager()
     resource_array = rm.list_resources()
+
+    #print(resource_array)
 
     resource_list = []
     resource_alias_list = []
@@ -27,6 +32,7 @@ def debug_config():
         try:
             resource = rm.open_resource(resource_info.resource_name)
             user_ID = resource.query(('*IDN?'))
+            #print(user_ID)
             user_ID_split = user_ID.split(',')
             resource.close()
         except Exception as e:
@@ -89,4 +95,64 @@ f.close()
 Scope.close()
 rm.close()
 
+'''
+
+
+
+#woo more debug
+
+
+
+#end = 1.8
+
+#Want this to take 24 steps. To the TDC current. LAst two are TDC and max.... well i guess lets see how good the steps are
+
+#for x in range(0,25):
+#
+#    step = round(float(x*(end/24)),3)
+#    print(step)
+
+
+'''
+
+rm = pyvisa.ResourceManager()
+
+scope = SCOPE(rm, 'TCPIP0::10.10.10.128::inst0::INSTR')
+
+scope.write('*CLS')
+x = f'{int(scope.query('INR?')):016b}'[2]
+print(x)
+
+scope.STOP()
+
+scope.timeScale(2)
+scope.OPC()
+scope.write('*CLS')
+scope.trigMode('SINGLE')
+
+
+
+
+time_elapsed = 0.0
+while time_elapsed < 10:
+    time.sleep(0.2)
+    time_elapsed += 0.1
+    x_raw = scope.query('INR?')
+    print(x_raw)
+    x = f'{int(x_raw):016b}'[2]
+    print(x)
+
+    if x == '1':
+        print('Broken')
+        break
+
+#while (f'{int(scope.query('INR?')):016b}')[2] != 1:
+#    time.sleep(0.2)
+#    print('Waiting...')
+#print('Trig!')
+    
+
+
+
+rm.close()
 '''
