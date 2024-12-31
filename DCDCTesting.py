@@ -160,9 +160,9 @@ def DCDC_main(window, start_test_button, popup_label, popup_button1, popup_butto
                     discharge(device)
                 elif test_count == 1:
                     test_ripple_jitter(popup_label, popup_button1, popup_button2, testing_progressbar, scope, supply, load, device)
-                    #if 'transient' in device.load_list:
-                    #    test_transient(popup_label, popup_button1, popup_button2, testing_progressbar, scope, supply, load, device)
-                    #test_overcurrent(popup_label, popup_button1, popup_button2, testing_progressbar, scope, supply, load, device)
+                    if 'transient' in device.load_list:
+                        test_transient(popup_label, popup_button1, popup_button2, testing_progressbar, scope, supply, load, device)
+                    test_overcurrent(popup_label, popup_button1, popup_button2, testing_progressbar, scope, supply, load, device)
                     discharge(device)
 
                 elif test_count == 2:

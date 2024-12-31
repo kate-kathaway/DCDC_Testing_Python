@@ -61,7 +61,7 @@ def initialize_equipment(scope_id:str,supply_id:str,load_id:str):
 
 
 class SCOPE:
-    def __init__(self, rm, connection_ID, timeout_ms = 12000):
+    def __init__(self, rm, connection_ID, timeout_ms = 30000):
 
         self.instr = rm.open_resource(connection_ID)
 
@@ -86,7 +86,7 @@ class SCOPE:
 
     def __write(self, string:str):
         self.instr.write(string)
-
+    
     def __query(self, string:str):
         out = self.instr.query(string)
         return out
@@ -99,6 +99,10 @@ class SCOPE:
         #This way we can do a listen command IF needed
         self.__query('*OPC?')
 
+    def WAIT(self):
+        self.__write('WAIT')
+        self.OPC()
+        
 
     def waitUntilTrig(self, timeout:int|float = 15):
         #Timeout is in seconds
@@ -134,6 +138,11 @@ class SCOPE:
             self.bandwidth('C1', '20MHz')
             self.bandwidth('C2', '20MHz')
             self.attenuation('C3', '6.03')
+        elif recall_num == 2:
+            self.bandwidth('C1', '20MHz')
+        elif recall_num == 4:
+            scope.setParamSkew('P1','C3', 'NEG',50,'F1','POS',50)
+            scope.setParamSkew('P2','F1', 'NEG',50,'C3','POS',50)
         self.OPC()
 
     def memorySize(self, memory_size:str):
@@ -152,11 +161,11 @@ class SCOPE:
         self.__write('STOP')
         self.OPC()
 
-    def horScale(self, time_per_division):
+    def timeScale(self, time_per_division):
         self.__write(f'TDIV {time_per_division}')
         self.OPC()
 
-    def triggerDelay(self, delay_time:str):
+    def triggerDelay(self, delay_time):
         self.__write(f'TRIG_DELAY {delay_time}')
         self.OPC()
 
@@ -203,7 +212,7 @@ class SCOPE:
         self.__write(f'BWL {channel_main},{bw}')
         self.OPC()
 
-    def offsetVert(self, channel_main:str, offset:float):
+    def offsetVert(self, channel_main:str, offset):
         
         self.__write(f'{channel_main}:OFFSET {offset}')
         self.OPC()
@@ -333,6 +342,7 @@ class SCOPE:
         f.close()
 
     def captureWaveforms(self, channel_meas:str, waveform_num:int, test_text:str, popup_label):
+        time.sleep(1)
         self.clearSweeps()
         self.trigMode('AUTO')
 
@@ -346,15 +356,16 @@ class SCOPE:
         self.OPC()
         popup_label.config(text = test_text)
 
-    def setupChannel(self, channel_main:str, high_val:float, low_val:float):
+    def setupChannel(self, channel_main:str, low_val:float, high_val:float):
         #Sets up channel. Takes up 6 of 8 vertical divisions
         mean = ((high_val-low_val)/2)+low_val
 
         self.offsetVert(channel_main, f'-{mean}')
         self.vertScale(channel_main, f'{(high_val-low_val)/6}')
         self.OPC()
+
     def setupChannelPercent(self,channel_main:str, value:float, percent:float):
-        self.setupChannel(channel_main, value*(1+(percent/100)), value*(1-(percent/100)))
+        self.setupChannel(channel_main, value*(1-(percent/200)), value*(1+(percent/200)))
 
     
 class SUPPLY:
@@ -428,6 +439,10 @@ class LOAD:
         self.m_current = self.getMaxCurrent('M')
         self.h_current = self.getMaxCurrent('H')
 
+        self.max_power = float(0)
+
+        self.max_power = self.getMaxPower()
+
     def __write(self, string:str):
         self.instr.write(string)
     def __query(self, string:str):
@@ -465,6 +480,9 @@ class LOAD:
         self.output(False)
         self.__write(f'MODE {mode}{range}')
 
+    def staticResist(self, resistance:float):
+        self.__write(f'RESISTANCE:STAT:L1 {resistance}')
+
     def autoCCMode(self,device):
         max_current = device.output_current_max
         if max_current > self.h_current:
@@ -488,18 +506,23 @@ class LOAD:
         level:
             'L1','L2'
         '''
-        self.__write(f'CURR:DYN:{level} {current,2}')
+        self.__write(f'CURR:DYN:{level} {current}')
 
-    def __setDyanmicTime(self, duration:float, time:str):
+    def setDyanmicTime(self, duration:str, time:float):
         '''
         duration:
             'T1','T2'
         '''
         self.__write(f'CURR:DYN:{duration} {time}')
     
-    def dyanmicFrequency(self, frequency_hz:int):
-        self.__setDyanmicTime('T1', 1/2*frequency_hz)
-        self.__setDyanmicTime('T2', 1/2*frequency_hz)
+    def dyanmicFrequency(self, frequency:int|str):
+
+        if 'k' in str(frequency):
+            frequency = frequency[:-1]
+            frequency = float(frequency) * 1000
+
+        self.setDyanmicTime('T1', 1/(2*float(frequency)))
+        self.setDyanmicTime('T2', 1/(2*float(frequency)))
 
     def slewRate(self, slew:str|float):
         '''
@@ -517,7 +540,7 @@ class LOAD:
         self.__write(f'CURR:DYN:REP {repeat_num}')
 
 
-    def dynamicSetup(self, mode_range:str, level_1:float, level_2:float, frequency_hz:int, slewrate:str|float, repeat:int):
+    def dynamicSetup(self, mode_range:str, level_1:float, level_2:float, frequency_hz:int|str, slewrate:str|float, repeat:int):
         self.output(False)
         self.mode('CCD', mode_range)
         self.dynamicLevel('L1', level_1)
