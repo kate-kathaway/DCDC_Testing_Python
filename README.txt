@@ -1,5 +1,5 @@
 #Description
-These files are made for OnLogic DC DC Testing for circuits
+These files are made for DC DC Testing for circuits
 
 #NOTE
 As of 12/31/25, program has not been verified to work for Jitter, VDS, and Deadtime tests. 
