@@ -186,28 +186,29 @@ def test_eff(popup_label, popup_button1, popup_button2, testing_progressbar, sco
         #load.autoCCMode(device)
         load.staticCurrent('0')
         supply.output(True)
+        time.sleep(0.3)
         load.output(True)
 
         scope.recall(1)
         #scope.autoSetup()
-        scope.setTrigger('C1','POS', device.output_voltage_nom)
-        scope.setupChannelPercent('C1', device.output_voltage_nom , 5)
-        scope.setupChannelPercent('C2', device.device_input_voltage, 5)
+        scope.setTrigger('C2','POS', device.device_input_voltage)
+        scope.setupChannelPercent('C1', device.output_voltage_nom , 20)
+        scope.setupChannelPercent('C2', device.device_input_voltage, 20)
 
+
+
+        time.sleep(15)#Sleeps for 10 sec to get accurate 0 load data
         first_loop = True
-        for linspace in range(0,25):
+        for linspace in range(0,26):
 
             meas_result = []
 
             scope.clearSweeps()
 
-            current_set = round(float(linspace*(device.output_current_nom/24)),3)
-            
+            current_set = round(float(linspace*(device.output_current_nom/25)),3)
             load.staticCurrent(current_set)
-            time.sleep(0.3)
-            scope.trigMode('SINGLE')
-            scope.waitUntilTrig(5)
-            scope.STOP()
+            time.sleep(0.5)
+            scope.forceCapture()
 
             meas_result.append(current_set)
             meas_result.append(scope.meas('P1','out'))
@@ -222,23 +223,19 @@ def test_eff(popup_label, popup_button1, popup_button2, testing_progressbar, sco
                 first_loop = False
 
 
-        for defined_point in [device.output_current_nom,device.output_current_max]:
-            meas_result = []
+        meas_result = []
+        scope.clearSweeps()
 
-            scope.clearSweeps()
+        meas_result.append(device.output_current_max)
+        load.staticCurrent(device.output_current_max)
+        time.sleep(0.5)
+        scope.forceCapture()
 
-            meas_result.append(defined_point)
-            load.staticCurrent(defined_point)
-            time.sleep(0.4)
-            scope.trigMode('SINGLE')
-            time.sleep(0.4)
-            scope.STOP()
+        meas_result.append(scope.meas('P1','out'))
+        meas_result.append(scope.meas('P5','out'))
+        meas_result.append(supply.meas('CURR'))
 
-            meas_result.append(scope.meas('P1','out'))
-            meas_result.append(scope.meas('P5','out'))
-            meas_result.append(supply.meas('CURR'))
-
-            efficiency_results.append(meas_result)
+        efficiency_results.append(meas_result)
 
         discharge(device)
 
@@ -387,10 +384,10 @@ def test_ripple_jitter(popup_label, popup_button1, popup_button2, testing_progre
  
                 scope.persist(True)
 
-                scope.setParam('P5','C3','MAX') #Changed from TOP to MAX. Seems like it makes way more sense
-                #scope.setParam('P5','C3','TOP')
+                #scope.setParam('P5','C3','MAX') #Change to max?? Maybe
+                scope.setParam('P5','C4','DUTY')
 
-                scope.captureWaveforms('P6', 2000, f'Running Jitter Test.... \n Step: {current} Load', popup_label )
+                scope.captureWaveforms('P5', 2000, f'Running Jitter Test.... \n Step: {current} Load', popup_label, 30)
                 filename = f'08_Jitter_{current}'
 
 
@@ -405,6 +402,7 @@ def test_ripple_jitter(popup_label, popup_button1, popup_button2, testing_progre
                 write_to_csv(device.folder_name_path, current_count+14, [f'{p6_min}',f'{p6_mean}', f'{p6_max}',f'{p5_min}', f'{p5_max}', f'{p5_stdev}',f'{device.folder_name_path}\\{filename}.png'],'Results')
 
                 scope.persist(False)
+                scope.setParam('P5','C2','MAX')
    
 
             scope.traceToggle('C1', True)
@@ -414,10 +412,9 @@ def test_ripple_jitter(popup_label, popup_button1, popup_button2, testing_progre
         discharge(device)
 
 
-
-        
-
     set_wait(True)
+    if device.test_list[0]:
+        set_wait(False)
     test_text = 'Ripple & Jitter Test Setup: \n Channel 1: Output Voltage \n Channel 2: Input Voltage \n Channel 3: Load Current (BNC) \n Channel 4: Low-Side Mosfet (Differential) \n Setup Complete?'
     listener(popup_button1, popup_button2, 'disabled', popup_label, test_text, testing_progressbar)
     ripple_jitter_main()
@@ -467,7 +464,7 @@ def test_transient(popup_label, popup_button1, popup_button2, testing_progressba
 
     def transient_main():
 
-        supply.output(False)
+        supply.output(True)
         load.output(False)
         load.mode('CCD','H')
 
@@ -483,7 +480,6 @@ def test_transient(popup_label, popup_button1, popup_button2, testing_progressba
         hertz_array = ['100','1k','10k']
         
         for count, hertz in enumerate(hertz_array):
-            supply.output(False)
             load.output(False)
             if 'k' in hertz:
                 hertz= float(hertz[:-1])*1000
@@ -494,7 +490,6 @@ def test_transient(popup_label, popup_button1, popup_button2, testing_progressba
 
                 popup_label.config(text = f'Running Transient Test... \n Step: {hertz_array[count]}Hz {L1}-{L2_array[L2_count]}%')
 
-                supply.output(False)
                 load.output(False)
 
                 load.dynamicSetup('H',current_array[L2_count],current_array[L2_count+1], hertz, 'MAX', 0)
@@ -502,7 +497,7 @@ def test_transient(popup_label, popup_button1, popup_button2, testing_progressba
                 scope.setupChannel('C3', current_array[L2_count],current_array[L2_count+1])
                 scope.setTrigger('C3','POS', ((2*L2_count)+1)*device.output_current_max/4)
                 
-                supply.output(True)
+                time.sleep(0.3)
                 load.output(True)
 
                 scope.captureWaveforms('P1', 100, f'Running Transient Test... \n Step: {hertz_array[count]}Hz {L1}-{L2_array[L2_count]}% ', popup_label)
@@ -563,8 +558,6 @@ def test_transient(popup_label, popup_button1, popup_button2, testing_progressba
 
         popup_label.config(text = 'Running Transient Test.... \n Step: Input Voltage')
 
-
-        supply.output(False)
         load.output(False)
 
         
@@ -580,7 +573,7 @@ def test_transient(popup_label, popup_button1, popup_button2, testing_progressba
 
         scope.timeScale('0.5ms')
 
-        supply.output(True)
+        time.sleep(0.3)
         load.output(True)
 
 
@@ -592,8 +585,7 @@ def test_transient(popup_label, popup_button1, popup_button2, testing_progressba
         p5_max = scope.meas('P5','max')
 
         write_to_csv(device.folder_name_path, 11, [f'{p5_max}', f'{p4_min}', f'{device.folder_name_path}\\{filename}.png'],'Results')
-        supply.output(False)
-        load.output(False)
+        discharge(device)
 
 
     set_wait(False)
@@ -822,11 +814,11 @@ def test_vds(popup_label, popup_button1, popup_button2, testing_progressbar, sco
             p1_min = scope.meas('P1','min')
             p2_max = scope.meas('P2','max')
 
-            p3_mean = scope.meas('P3','mean')
-            p4_mean = scope.meas('P4','mean')
+            p3_mean = scope.meas('P3','mean', 10**9)
+            p4_mean = scope.meas('P4','mean', 10**9)
 
-            write_to_csv(device.folder_name_path, vds_count + current_count+33, [f'{p1_min}',f'{p2_max}', f'{p3_mean}',f'{p4_mean}',f'{device.folder_name_path}\\{filename}.png'],'Results')
-            discharge()
+            write_to_csv(device.folder_name_path, vds_count + current_count+33, [f'{p1_min}',f'{p2_max}', f'{p3_mean}ns',f'{p4_mean}ns',f'{device.folder_name_path}\\{filename}.png'],'Results')
+            discharge(device)
 
         
 
@@ -852,9 +844,9 @@ def test_vds(popup_label, popup_button1, popup_button2, testing_progressbar, sco
             p1_min = scope.meas('P1','min')
             p2_max = scope.meas('P2','max')
 
-            p3_min = scope.meas('P3','min')
-            p4_min = scope.meas('P4','min')
-            write_to_csv(device.folder_name_path,vds_count + 35, [f'{p1_min}',f'{p2_max}', f'{p3_min}',f'{p4_min}',f'{device.folder_name_path}\\{filename}.png'],'Results')
+            p3_min = scope.meas('P3','min', 10**9)
+            p4_min = scope.meas('P4','min', 10**9)
+            write_to_csv(device.folder_name_path,vds_count + 35, [f'{p1_min}',f'{p2_max}', f'{p3_min}ns',f'{p4_min}ns',f'{device.folder_name_path}\\{filename}.png'],'Results')
 
 
         supply.output(False)
@@ -926,11 +918,20 @@ def test_deadtime(popup_label, popup_button1, popup_button2, testing_progressbar
     load.mode('CC','H')
     supply.output(False)
 
-    
 
-    for channel in ['C1','C2','C3','C4']:
-        scope.vertScale(channel,(device.output_voltage_nom+5)/4)
-        scope.offsetVert(channel, f'-{device.device_input_voltage/2}')
+    scope.zoomHorMagnify('F1',1)
+    
+    #Changes scaling if device is boost or buck
+    if device.device_input_voltage < device.output_voltage_nom:
+        for channel in ['C1','C2','C3','C4']:
+            scope.vertScale(channel,(device.output_voltage_nom+5)/4)
+            scope.offsetVert(channel, f'-{device.output_voltage_nom/2}')
+        trig_level = device.output_voltage_nom/2
+    else:
+        for channel in ['C1','C2','C3','C4']:
+            scope.vertScale(channel,(device.device_input_voltage+5)/4)
+            scope.offsetVert(channel, f'-{device.device_input_voltage/2}')
+        trig_level = device.device_input_voltage/2
 
     trig_type = ['POS','NEG']
 
@@ -940,16 +941,17 @@ def test_deadtime(popup_label, popup_button1, popup_button2, testing_progressbar
 
     scope.triggerDelay(f'-{1/(4*device.frequency)}')
 
-    scope.setTrigger('C4','POS',device.device_input_voltage/2)
+    scope.setTrigger('C1','POS',trig_level)
 
     load.staticCurrent(device.output_current_nom)
 
-    scope.zoomHorMagnify('F1',1)
+    
 
     def deadtime_main():
 
         #If min load is skipped, then full capture is taken at TDC load instead
         supply.output(True)
+        time.sleep(0.3)
         if 'min' in device.load_list:
             load.output(False)
         else:
@@ -961,25 +963,23 @@ def test_deadtime(popup_label, popup_button1, popup_button2, testing_progressbar
         time.sleep(3) #Specified delay for turnon
 
 
-        scope.captureWaveforms('P1', 20, 'Running Deadtime Test.... \n Step: Full', popup_label) #Number reports back as double for some reason
+        scope.captureWaveforms('P1', 200, 'Running Deadtime Test.... \n Step: Full', popup_label) #Number reports back as double for some reason
 
         filename = f'Deadtime_Full'
         scope.screenshot(device.folder_name_path,filename)
 
-        scope.meas('P1','min')
-
-        p1_min = scope.meas('P1','min')
-        p1_mean = scope.meas('P1','mean')
-        p1_max = scope.meas('P1','max')
+        p1_min = scope.meas('P1','min', 10**9)
+        p1_mean = scope.meas('P1','mean', 10**9)
+        p1_max = scope.meas('P1','max', 10**9)
 
 
-        p2_min = scope.meas('P2','min')
-        p2_mean = scope.meas('P2','mean')
-        p2_max = scope.meas('P2','max')
+        p2_min = scope.meas('P2','min', 10**9)
+        p2_mean = scope.meas('P2','mean', 10**9)
+        p2_max = scope.meas('P2','max', 10**9)
 
 
 
-        write_to_csv(device.folder_name_path, 4, [f'{p1_min}',f'{p1_mean}',f'{p1_max}',f'{p2_min}',f'{p2_mean}',f'{p2_max}', f'{device.folder_name_path}\\{filename}.png'],'deadtime')
+        write_to_csv(device.folder_name_path, 4, [f'{p1_min}ns',f'{p1_mean}ns',f'{p1_max}ns',f'{p2_min}ns',f'{p2_mean}ns',f'{p2_max}ns', f'{device.folder_name_path}\\{filename}.png'],'deadtime')
 
         current_testing = device.makeLoadPointList('max')
 
@@ -988,6 +988,7 @@ def test_deadtime(popup_label, popup_button1, popup_button2, testing_progressbar
             load.output(False)
             load.staticCurrent(device.output_current_nom)
             supply.output(True)
+            time.sleep(0.3)
             capture_mult = 1
 
             if current == 'min':
@@ -1011,34 +1012,34 @@ def test_deadtime(popup_label, popup_button1, popup_button2, testing_progressbar
                 scope.triggerDelay(0)
                 if trigger =='POS':
                     trig_label = 'Rise'
-                    scope.setTrigger('C4','POS',device.device_input_voltage/2)
+                    scope.setTrigger('C1','POS',trig_level)
                     trig_count = 0
                     capture_chan = 'P1'
                 elif trigger == 'NEG':
                     trig_label = 'Fall'
-                    scope.setTrigger('C4','NEG',device.device_input_voltage/2)
+                    scope.setTrigger('C1','NEG',trig_level)
                     trig_count = 1
                     capture_chan = 'P2'
 
                 #time.sleep(1)
                 popup_label.config(text = f'Running Deadtime Test.... \n Step: {current} {trig_label}')
 
-                scope.captureWaveforms(capture_chan, capture_mult*20, f'Running Deadtime Test.... \n Step: {current} {trig_label}', popup_label) #Number reports back as double for some reason
+                scope.captureWaveforms(capture_chan, capture_mult*200, f'Running Deadtime Test.... \n Step: {current} {trig_label}', popup_label) #Number reports back as double for some reason
 
 
                 filename = f'Deadtime_{current}_{trig_label}'
                 scope.screenshot(device.folder_name_path,filename)
                 scope.meas('P1','min')
-                p1_min = scope.meas('P1','min')
-                p1_mean = scope.meas('P1','mean')
-                p1_max = scope.meas('P1','max')
+                p1_min = scope.meas('P1','min', 10**9)
+                p1_mean = scope.meas('P1','mean', 10**9)
+                p1_max = scope.meas('P1','max', 10**9)
 
-                p2_min = scope.meas('P2','min')
-                p2_mean = scope.meas('P2','mean')
-                p2_max = scope.meas('P2','max')
+                p2_min = scope.meas('P2','min', 10**9)
+                p2_mean = scope.meas('P2','mean', 10**9)
+                p2_max = scope.meas('P2','max', 10**9)
 
 
-                write_to_csv(device.folder_name_path, 5+current_count+trig_count, [f'{p1_min}',f'{p1_mean}',f'{p1_max}',f'{p2_min}',f'{p2_mean}',f'{p2_max}', f'{device.folder_name_path}\\{filename}.png'],'deadtime')
+                write_to_csv(device.folder_name_path, 5+current_count+trig_count, [f'{p1_min}ns',f'{p1_mean}ns',f'{p1_max}ns',f'{p2_min}ns',f'{p2_mean}ns',f'{p2_max}ns', f'{device.folder_name_path}\\{filename}.png'],'deadtime')
 
 
         
@@ -1061,48 +1062,53 @@ def test_deadtime(popup_label, popup_button1, popup_button2, testing_progressbar
 
         filename = f'Deadtime_Turnon'
         scope.screenshot(device.folder_name_path,filename)
-        p1_min = scope.meas('P1','min')
-        p1_mean = scope.meas('P1','mean')
-        p1_max = scope.meas('P1','max')
+        p1_min = scope.meas('P1','min', 10**9)
+        p1_mean = scope.meas('P1','mean', 10**9)
+        p1_max = scope.meas('P1','max', 10**9)
 
-        p2_min = scope.meas('P2','min')
-        p2_mean = scope.meas('P2','mean')
-        p2_max = scope.meas('P2','max')
+        p2_min = scope.meas('P2','min', 10**9)
+        p2_mean = scope.meas('P2','mean', 10**9)
+        p2_max = scope.meas('P2','max', 10**9)
 
 
 
-        write_to_csv(device.folder_name_path, 15, [f'{p1_min}',f'{p1_mean}',f'{p1_max}',f'{p2_min}',f'{p2_mean}',f'{p2_max}', f'{device.folder_name_path}\\{filename}.png'],'deadtime')
+        write_to_csv(device.folder_name_path, 15, [f'{p1_min}ns',f'{p1_mean}ns',f'{p1_max}ns',f'{p2_min}ns',f'{p2_mean}ns',f'{p2_max}ns', f'{device.folder_name_path}\\{filename}.png'],'deadtime')
 
         scope.timeScale(1/(60*device.frequency))
 
         filename = f'Deadtime_Turnon_First'
         scope.screenshot(device.folder_name_path,filename)
-        p1_min = scope.meas('P1','min')
-        p1_mean = scope.meas('P1','mean')
-        p1_max = scope.meas('P1','max')
+        p1_min = scope.meas('P1','min', 10**9)
+        p1_mean = scope.meas('P1','mean', 10**9)
+        p1_max = scope.meas('P1','max', 10**9)
 
-        p2_min = scope.meas('P2','min')
-        p2_mean = scope.meas('P2','mean')
-        p2_max = scope.meas('P2','max')
+        p2_min = scope.meas('P2','min', 10**9)
+        p2_mean = scope.meas('P2','mean', 10**9)
+        p2_max = scope.meas('P2','max', 10**9)
 
 
-        write_to_csv(device.folder_name_path, 16, [f'{p1_min}',f'{p1_mean}',f'{p1_max}',f'{p2_min}',f'{p2_mean}',f'{p2_max}', f'{device.folder_name_path}\\{filename}.png'],'deadtime')
+        write_to_csv(device.folder_name_path, 16, [f'{p1_min}ns',f'{p1_mean}ns',f'{p1_max}ns',f'{p2_min}ns',f'{p2_mean}ns',f'{p2_max}ns', f'{device.folder_name_path}\\{filename}.png'],'deadtime')
 
  
-        scope.triggerDelay(f'-{2/(20*device.frequency)}')
-        #time.sleep(0.5)
+        scope.timeScale(5/(60*device.frequency))
+
+
+        set_wait(True)
+        test_text = 'Adjust horizontal delay of C1 until second turn-on is visible. Hit Continue when done.'
+        listener(popup_button1, popup_button2, 'disabled', popup_label, test_text, testing_progressbar)
+
         filename = f'Deadtime_Turnon_Second'
         scope.screenshot(device.folder_name_path,filename)
-        p1_min = scope.meas('P1','min')
-        p1_mean = scope.meas('P1','mean')
-        p1_max = scope.meas('P1','max')
+        p1_min = scope.meas('P1','min', 10**9)
+        p1_mean = scope.meas('P1','mean', 10**9)
+        p1_max = scope.meas('P1','max', 10**9)
 
-        p2_min = scope.meas('P2','min')
-        p2_mean = scope.meas('P2','mean')
-        p2_max = scope.meas('P2','max')
+        p2_min = scope.meas('P2','min', 10**9)
+        p2_mean = scope.meas('P2','mean', 10**9)
+        p2_max = scope.meas('P2','max', 10**9)
 
 
-        write_to_csv(device.folder_name_path, 17, [f'{p1_min}',f'{p1_mean}',f'{p1_max}',f'{p2_min}',f'{p2_mean}',f'{p2_max}', f'{device.folder_name_path}\\{filename}.png'],'deadtime')
+        write_to_csv(device.folder_name_path, 17, [f'{p1_min}ns',f'{p1_mean}ns',f'{p1_max}ns',f'{p2_min}ns',f'{p2_mean}ns',f'{p2_max}ns', f'{device.folder_name_path}\\{filename}.png'],'deadtime')
 
         supply.output(False)
 
@@ -1202,16 +1208,17 @@ def test_turnonoff(popup_label, popup_button1, popup_button2, testing_progressba
 
             def run_test_setup(mode = 'CCH'):
                 scope.triggerDelay(0)
-                popup_label.config(text = f'Running {current} Turn-On Test')
+                popup_label.config(text = f'Running {current} {mode} Turn-On Test')
                 if mode == 'CRL':
                     load.mode('CR','L')
                     load.staticResist(device.output_voltage_nom/device.output_current_nom)
+                    load.output(True)
 
-                load.output('ON')
+
                 scope.trigMode('SINGLE')
                 time.sleep(5)
                 supply.output(True)
-                scope.WAIT() #Waits until capture is taken
+                scope.WAIT(10) #Waits until capture is taken
                 supply.output(False)
                 load.mode('CC','H')
 
@@ -1220,7 +1227,7 @@ def test_turnonoff(popup_label, popup_button1, popup_button2, testing_progressba
                 scope.screenshot(device.folder_name_path,filename)
 
                 p2_rise_ms = scope.meas('P2','out',1000)
-                write_to_csv(device.folder_name_path, current_count + 3, [f'{p2_rise_ms}',f'{device.folder_name_path}\\{filename}.png'],'Turn_on_off')
+                write_to_csv(device.folder_name_path, current_count + 3, [f'{p2_rise_ms}ms',f'{device.folder_name_path}\\{filename}.png'],'Turn_on_off')
                 
 
             def rising_zoom():
@@ -1229,19 +1236,21 @@ def test_turnonoff(popup_label, popup_button1, popup_button2, testing_progressba
 
                 p2_rise_ms = scope.meas('P2','out',1000)
 
-                write_to_csv(device.folder_name_path, current_count + 4, [f'{p2_rise_ms}',f'{device.folder_name_path}\\{filename}.png'],'Turn_on_off')
+                write_to_csv(device.folder_name_path, current_count + 4, [f'{p2_rise_ms}ms',f'{device.folder_name_path}\\{filename}.png'],'Turn_on_off')
                 
 
             run_test_setup()
 
 
             if (current == 'tdc'):
+                load.output(True)
                 set_wait(True)
                 set_skip(True)
                 test_text = 'Adjust horizontal delay and scale until all rising edges are visible. Hit Continue when done. \n Press skip to instead re-run in CR mode'
                 listener(popup_button1, popup_button2, 'enabled', popup_label, test_text, testing_progressbar)
                 if not get_skip():
-                    run_test_setup(True, 'CRL')
+                    time.sleep(0.3)
+                    run_test_setup('CRL')
                     set_wait(True)
                     test_text = 'CR MODE. Adjust horizontal delay and scale until all rising edges are visible. Hit Continue when done'
                     listener(popup_button1, popup_button2, 'disabled', popup_label, test_text, testing_progressbar)
@@ -1290,19 +1299,19 @@ def test_turnonoff(popup_label, popup_button1, popup_button2, testing_progressba
             
             if test_name == 'AC':
                 scope.triggerDelay(0)
-                scope.timeScale(1)
+                scope.timeScale(2)
                 supply.output(False)
                 load.mode('CC','H')
                 load.staticCurrent(0.1)
                 load.output(True)
-                time.sleep(1)
+                time.sleep(3)
                 load.output(False)
                 supply.output(True)
                 time.sleep(5) #Specified delay
                 
 
                 scope.trigMode('SINGLE')
-                time.sleep(5)
+                time.sleep(15)
                 supply.output(False)
                 scope.WAIT()
 
@@ -1316,8 +1325,8 @@ def test_turnonoff(popup_label, popup_button1, popup_button2, testing_progressba
                 p6_fall_ms = scope.meas('P6','out',1000)
                 scope.meas('P6','out',1000)
                 #p6_fall_ms = p6_fall*1000
-                p5_base = scope.meas('P5','out',1000)
-                write_to_csv(device.folder_name_path, 9 + exceloffset, [f'{p6_fall_ms}',f'{p5_base}',f'{device.folder_name_path}\\{filename}.png'],'Turn_on_off')
+                p5_base = scope.meas('P5','out')
+                write_to_csv(device.folder_name_path, 9 + exceloffset, [f'{p6_fall_ms}ms',f'{p5_base}',f'{device.folder_name_path}\\{filename}.png'],'Turn_on_off')
 
             def falling_zoom():
                 filename = f'Turn-Off_{test_name}_Zoom'
@@ -1325,8 +1334,8 @@ def test_turnonoff(popup_label, popup_button1, popup_button2, testing_progressba
 
                 p6_fall_ms = scope.meas('P6','out',1000)
                 #p6_fall_ms = p6_fall*1000
-                p5_base = scope.meas('P5','out',1000)
-                write_to_csv(device.folder_name_path, 10 + exceloffset, [f'{p6_fall_ms}',f'{p5_base}',f'{device.folder_name_path}\\{filename}.png'],'Turn_on_off')
+                p5_base = scope.meas('P5','out')
+                write_to_csv(device.folder_name_path, 10 + exceloffset, [f'{p6_fall_ms}ms',f'{p5_base}',f'{device.folder_name_path}\\{filename}.png'],'Turn_on_off')
                
 
             scope.waitUntilTrig(timeout = 120)
@@ -1349,8 +1358,8 @@ def test_turnonoff(popup_label, popup_button1, popup_button2, testing_progressba
 
     popup_label.config(text = f'Turn-Off Test Setup')
     #Setup for Turnoff test
-    scope.timeScale(1)
-    scope.setTrigger('C4', 'NEG', device.output_voltage_nom/2)
+    scope.timeScale(2)
+    scope.setTrigger('C3', 'NEG', 0.9)
     scope.setParam('P5','C4','BASE')
 
     load.output(False)
@@ -1358,7 +1367,7 @@ def test_turnonoff(popup_label, popup_button1, popup_button2, testing_progressba
     time.sleep(5) #Specified pause
 
     scope.trigMode('SINGLE')
-    time.sleep(5)
+    time.sleep(10)
     set_wait(True)
     set_skip(True)
     test_text = 'For Power-Button test, hit "Continue" after power button has been pressed. To skip, hit "Skip" '

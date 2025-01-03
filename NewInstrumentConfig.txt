@@ -1,9 +1,0 @@
-Alias    User ID     Instrument Connection ID 
----------------------------------------- 
-Chroma_DC_Load   63004-150-60   USB0::0x0A69::0x0880::630041500253::0::INSTR 
-BK_9205_Power_Supply    9205B   USB0::0x2EC7::0x9200::800886011777110059::0::INSTR 
-Lecroy_H6104A   HDO6104A   TCPIP0::10.10.10.128::inst0::INSTR 
-LCRY3566N52222   WS4104HD   TCPIP0::10.10.8.9::inst0::INSTR 
-COM1   Not Found   ASRL1::INSTR 
-COM2   Not Found   ASRL2::INSTR 
-COM3   Not Found   ASRL3::INSTR 

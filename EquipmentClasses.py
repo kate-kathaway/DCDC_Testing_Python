@@ -99,8 +99,8 @@ class SCOPE:
         #This way we can do a listen command IF needed
         self.__query('*OPC?')
 
-    def WAIT(self):
-        self.__write('WAIT')
+    def WAIT(self, timeout:int = 20):
+        self.__write(f'WAIT {timeout}')
         self.OPC()
         
 
@@ -150,7 +150,8 @@ class SCOPE:
         self.OPC()
 
     def forceCapture(self):
-        self.__write('FRTR')
+        self.__write('TRMD SiNGLE;ARM;FRTR')
+        self.WAIT()
         self.OPC()
 
     def ARM(self):
@@ -341,13 +342,15 @@ class SCOPE:
         f.flush()
         f.close()
 
-    def captureWaveforms(self, channel_meas:str, waveform_num:int, test_text:str, popup_label):
+    def captureWaveforms(self, channel_meas:str, waveform_num:int, test_text:str, popup_label, timeout:float = 60):
         time.sleep(1)
         self.clearSweeps()
         self.trigMode('AUTO')
 
-        while int(self.meas(channel_meas,'num') < waveform_num):
+        time_elapsed = 0.0
+        while int(self.meas(channel_meas,'num') < waveform_num) and time_elapsed<timeout:
             time.sleep(0.5) #Slight delay to prevent infinite calling
+            time_elapsed += 0.5
             current_waveform = int(self.meas(channel_meas,'num'))
             new_text = test_text + f' \n {current_waveform} / {waveform_num} Waveforms'
             popup_label.config(text = new_text)
@@ -365,7 +368,7 @@ class SCOPE:
         self.OPC()
 
     def setupChannelPercent(self,channel_main:str, value:float, percent:float):
-        self.setupChannel(channel_main, value*(1-(percent/200)), value*(1+(percent/200)))
+        self.setupChannel(channel_main, value*(1-(percent/100)), value*(1+(percent/100)))
 
     
 class SUPPLY:

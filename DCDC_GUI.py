@@ -114,7 +114,7 @@ def get_variables():
             raise Exception('Device name missing')
 
 
-        device.exfets = extfets_entry_var.get()
+        device.extfets = extfets_entry_var.get()
 
 
         device.device_input_voltage = voltage_input_entry_var.get()
@@ -474,5 +474,7 @@ popup_button2.grid(column = 1, row = 12)
 
 
 window.bind('<Escape>', quit_and_close)
+
+#window.bind('<Enter>', set_wait)
 
 window.mainloop()
