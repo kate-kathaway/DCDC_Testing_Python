@@ -5,6 +5,7 @@ import csv
 import time
 import tkinter as tk
 import tkinter.ttk as ttk #this is for THEMED widgets. Explicitly calls them out
+import shutil
 
 
 
@@ -57,27 +58,7 @@ def listener(popup_button1, popup_button2, popup_button2_state:str, popup_label,
 
 
 
-'''
-NOTES:
-
-This file holds individual high-level functions and tests. 
-
-
-create_folder: creates the testing folder that houses all testing results
-
-copy_csv: Copies any csv file given the path and file name. Places into the folder made by create_folder
-
-write_to_csv: Writes to any CSV. It does so by copying and replacing the info on the given linenum variable, then clearing the old unedited file
-
-
-Tests: All tests are accoridng to the "DC-DC testing instructions (Non-LabVIEW)". Bode plots excluded
-
-
-
-'''
-
-
-def create_folder(input_voltage:float, device_under_test:str):
+def create_folder(input_voltage:float, device_under_test:str, device:DUT):
     """
     
     Creates and names the folder for all results of the test in the current code directory
@@ -98,6 +79,16 @@ def create_folder(input_voltage:float, device_under_test:str):
     print(python_path)
     folder_name_path = f'{python_path}\\{results_folder_name}'
     os.makedirs(folder_name_path)
+
+
+    template_name = device.getDeviceReport()
+
+    filled_template_name = f'{device.dut_type} - {device.name} - {round(device.supply_input_voltage,1)}V Input'
+
+    if template_name != '':
+        shutil.copy2(f'{python_path}\\Templates\\{template_name}', f'{folder_name_path}\\{filled_template_name}')
+
+
 
     return folder_name_path, python_path
 
@@ -197,7 +188,7 @@ def test_eff(popup_label, popup_button1, popup_button2, testing_progressbar, sco
 
 
 
-        time.sleep(15)#Sleeps for 10 sec to get accurate 0 load data
+        time.sleep(20)#Sleeps for 10 sec to get accurate 0 load data
         first_loop = True
         for linspace in range(0,26):
 
@@ -212,7 +203,8 @@ def test_eff(popup_label, popup_button1, popup_button2, testing_progressbar, sco
 
             meas_result.append(current_set)
             meas_result.append(scope.meas('P1','out'))
-            meas_result.append(scope.meas('P5','out'))
+            #meas_result.append(scope.meas('P5','out'))
+            meas_result.append(supply.meas('VOLT'))
             meas_result.append(supply.meas('CURR'))
         
             efficiency_results.append(meas_result)
@@ -232,7 +224,8 @@ def test_eff(popup_label, popup_button1, popup_button2, testing_progressbar, sco
         scope.forceCapture()
 
         meas_result.append(scope.meas('P1','out'))
-        meas_result.append(scope.meas('P5','out'))
+        #meas_result.append(scope.meas('P5','out'))
+        meas_result.append(supply.meas('VOLT'))
         meas_result.append(supply.meas('CURR'))
 
         efficiency_results.append(meas_result)
@@ -322,8 +315,8 @@ def test_ripple_jitter(popup_label, popup_button1, popup_button2, testing_progre
         scope.traceToggle('C3', True)
         scope.traceToggle('C4', True)
 
-        scope.setupChannelPercent('C1',device.output_voltage_nom,5)
-        scope.setupChannelPercent('C2',device.device_input_voltage,5)
+        scope.setupChannelPercent('C1',device.output_voltage_nom,6)
+        scope.setupChannelPercent('C2',device.device_input_voltage,6)
         scope.setupChannel('C4', 0, device.device_input_voltage)
 
         for current in current_list:
@@ -470,8 +463,8 @@ def test_transient(popup_label, popup_button1, popup_button2, testing_progressba
 
         scope.recall(1)
 
-        scope.setupChannelPercent('C1',device.output_voltage_nom,5)
-        scope.setupChannelPercent('C2',device.device_input_voltage,5)
+        scope.setupChannelPercent('C1',device.output_voltage_nom,6)
+        scope.setupChannelPercent('C2',device.device_input_voltage,6)
         scope.traceToggle('C2',False)
         scope.traceToggle('C4',False)
 
@@ -568,7 +561,7 @@ def test_transient(popup_label, popup_button1, popup_button2, testing_progressba
         scope.setTrigger('C3','POS', device.output_current_nom/4)
 
         scope.traceToggle('C2',True)
-        scope.setupChannelPercent('C2',device.device_input_voltage, 5)
+        scope.setupChannelPercent('C2',device.device_input_voltage, 6)
         scope.traceToggle('C1',False)
 
         scope.timeScale('0.5ms')
@@ -663,38 +656,50 @@ def test_overcurrent(popup_label, popup_button1, popup_button2, testing_progress
         
 
         scope.trigMode('SINGLE')
-        time.sleep(0.3)
+        time.sleep(0.2)
         load.output(True)
-
-        time.sleep(1) #Needed pause
+        scope.WAIT()
 
 
         scope.meas('P1','min')
 
-        
+        stepsize = 0
         voltage_level = scope.meas('P1','min')
         overcurrent_level = float(device.output_current_max)
 
-        while (voltage_level >= float((device.output_voltage_nom*0.9))) and ((overcurrent_level+1) < load.max_power/device.output_voltage_nom):# and (overcurrent_level < 4*device.output_current_max):    #350W is max of the chroma load. Overpower prot after that
-            stepsize = 0
-            if device.output_current_max <10:
-                stepsize = 0.1
-            elif device.output_current_max>= 10:
-                stepsize = 1
+        if device.output_current_max <10:
+            stepsize = 0.1
+        elif device.output_current_max>= 10:
+            stepsize = 1
 
+        while (voltage_level >= float((device.output_voltage_nom*0.9))) and ((overcurrent_level+1) < load.max_power/device.output_voltage_nom):# and (overcurrent_level < 4*device.output_current_max):    #350W is max of the chroma load. Overpower prot after that
             overcurrent_level = overcurrent_level + stepsize
 
-            popup_label.config(text = f'Running Overcurrent Test... \n Current = {overcurrent_level}A')
+            popup_label.config(text = f'Running Overcurrent Test... \n Current = {round(overcurrent_level,2)}A')
 
             load.dynamicLevel('L2', overcurrent_level)
 
             scope.vertScale('C3', overcurrent_level/3)
 
             scope.trigMode('SINGLE')
+            time.sleep(0.2)
             load.output(True)
             scope.WAIT()
 
             voltage_level = scope.meas('P1','min')
+            current_level = scope.meas('P5','out')
+
+
+            if voltage_level < float(device.output_voltage_nom*0.9):
+                oc_reason = 'Voltage < 90%'
+                break
+            if (overcurrent_level+(2*stepsize)) > load.max_power/device.output_voltage_nom:
+                oc_reason = 'Max Load Power'
+                break
+            if current_level < (overcurrent_level*0.7):
+                oc_reason = 'DUT Current Limiting'
+                break
+
 
         
         supply.output(False)
@@ -704,7 +709,7 @@ def test_overcurrent(popup_label, popup_button1, popup_button2, testing_progress
        
         p5_value = voltage_level = scope.meas('P5','out')
 
-        write_to_csv(device.folder_name_path, 29, [f'{p5_value}', f'{device.folder_name_path}\\{filename}.png'],'Results')
+        write_to_csv(device.folder_name_path, 29, [f'{p5_value}', f'{device.folder_name_path}\\{filename}.png', oc_reason],'Results')
 
 
     set_wait(False)
@@ -938,14 +943,13 @@ def test_deadtime(popup_label, popup_button1, popup_button2, testing_progressbar
     #Setup
 
     scope.timeScale(1/(device.frequency*11))
-
-    scope.triggerDelay(f'-{1/(4*device.frequency)}')
+    
 
     scope.setTrigger('C1','POS',trig_level)
 
     load.staticCurrent(device.output_current_nom)
 
-    
+    scope.setParam('P6','C4','WID')
 
     def deadtime_main():
 
@@ -956,6 +960,10 @@ def test_deadtime(popup_label, popup_button1, popup_button2, testing_progressbar
             load.output(False)
         else:
             load.output(True)
+
+        c4_width = scope.meas('P6','out',10**9)
+
+        scope.triggerDelay(f'-{c4_width/(2*(10**9))}')
 
         popup_label.config(text = 'Running Deadtime Test.... \n Step: Full')
 
@@ -1059,6 +1067,9 @@ def test_deadtime(popup_label, popup_button1, popup_button2, testing_progressbar
         scope.trigMode('SINGLE')
         supply.output(True)
         time.sleep(5) #specified 5 sec delay
+        c4_width = scope.meas('P6','out',10**9)
+
+        scope.triggerDelay(f'-{c4_width/(2*(10**9))}')
 
         filename = f'Deadtime_Turnon'
         scope.screenshot(device.folder_name_path,filename)
@@ -1074,7 +1085,7 @@ def test_deadtime(popup_label, popup_button1, popup_button2, testing_progressbar
 
         write_to_csv(device.folder_name_path, 15, [f'{p1_min}ns',f'{p1_mean}ns',f'{p1_max}ns',f'{p2_min}ns',f'{p2_mean}ns',f'{p2_max}ns', f'{device.folder_name_path}\\{filename}.png'],'deadtime')
 
-        scope.timeScale(1/(60*device.frequency))
+        scope.timeScale(1/(55*device.frequency))
 
         filename = f'Deadtime_Turnon_First'
         scope.screenshot(device.folder_name_path,filename)
@@ -1092,6 +1103,7 @@ def test_deadtime(popup_label, popup_button1, popup_button2, testing_progressbar
  
         scope.timeScale(5/(60*device.frequency))
 
+        supply.output(False)
 
         set_wait(True)
         test_text = 'Adjust horizontal delay of C1 until second turn-on is visible. Hit Continue when done.'
@@ -1287,7 +1299,6 @@ def test_turnonoff(popup_label, popup_button1, popup_button2, testing_progressba
 
 
     def turnoff_main(buttontest):
-        popup_label.config(text = f'Running Turn-Off Test')
         test_list = ['Button','AC']
         if buttontest == 'ACOnly':
             test_list = ['AC']
@@ -1296,7 +1307,7 @@ def test_turnonoff(popup_label, popup_button1, popup_button2, testing_progressba
             #popup_label.config(text = f'Running Turn-Off Test.... \n Step: {test_name}')
             exceloffset = 0
             
-            
+            popup_label.config(text = f'Running {test_name} Turn-Off Test')
             if test_name == 'AC':
                 scope.triggerDelay(0)
                 scope.timeScale(2)

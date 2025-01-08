@@ -117,7 +117,7 @@ def DCDC_main(window, start_test_button, popup_label, popup_button1, popup_butto
         supply.setVoltage(device.supply_input_voltage)
 
         #Create folder in current python path
-        device.folder_name_path, device.python_path = create_folder(device.supply_input_voltage, device.name)
+        device.folder_name_path, device.python_path = create_folder(device.supply_input_voltage, device.name, device)
 
 
         #Sets up and prints the test_Conditions file. This could probably be changed over to the "copy and move" file function created later
@@ -151,6 +151,9 @@ def DCDC_main(window, start_test_button, popup_label, popup_button1, popup_butto
         copy_csv(device.python_path,device.folder_name_path,'deadtime')
         copy_csv(device.python_path,device.folder_name_path,'Turn_on_off')
 
+
+        #Eff, RippleJitter, Transient, Overcurrent, VDS, Deadtime, Turnon-off
+
         for test_count, test_value in enumerate(device.test_list):
             supply.output(False)
             if test_value:
@@ -159,29 +162,23 @@ def DCDC_main(window, start_test_button, popup_label, popup_button1, popup_butto
                     discharge(device)
                 elif test_count == 1:
                     test_ripple_jitter(popup_label, popup_button1, popup_button2, testing_progressbar, scope, supply, load, device)
-                    if 'transient' in device.load_list:
-                        test_transient(popup_label, popup_button1, popup_button2, testing_progressbar, scope, supply, load, device)
-                    test_overcurrent(popup_label, popup_button1, popup_button2, testing_progressbar, scope, supply, load, device)
                     discharge(device)
-
                 elif test_count == 2:
-                    device.jitter_bool = True
-                    test_ripple_jitter(popup_label, popup_button1, popup_button2, testing_progressbar, scope, supply, load, device)
                     if 'transient' in device.load_list:
                         test_transient(popup_label, popup_button1, popup_button2, testing_progressbar, scope, supply, load, device)
+                    discharge(device)
+                elif test_count == 3:
                     test_overcurrent(popup_label, popup_button1, popup_button2, testing_progressbar, scope, supply, load, device)
                     discharge(device)
+                elif test_count == 4:
                     test_vds(popup_label, popup_button1, popup_button2, testing_progressbar, scope, supply, load, device)
                     discharge(device)
-
-                elif test_count == 3:
+                elif test_count == 5:
                     test_deadtime(popup_label, popup_button1, popup_button2, testing_progressbar, scope, supply, load, device)
                     discharge(device)
-
-                elif test_count == 4: 
+                elif test_count == 6: 
                     test_turnonoff(popup_label, popup_button1, popup_button2, testing_progressbar, scope, supply, load, device)
                     discharge(device)
-
                 else:
                     continue      
             else:

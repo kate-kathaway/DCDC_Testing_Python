@@ -1,19 +1,14 @@
 import pyvisa
 import time
-import os
-import shutil
-
 
 def list_equipment():
     """
-
     Lists all connected ports & equipment
 
     Return:
-       list of equipment IDs for connection.
+       resource_list: list of equipment IDs for connection.
 
-       list of equipment alias for ease of human reading.
-
+       resource_alias_list: list of equipment alias for ease of human reading.
     """
 
 
@@ -38,14 +33,17 @@ def list_equipment():
 
 def initialize_equipment(scope_id:str,supply_id:str,load_id:str):
     """
-    
     Connects to specified load, supply, and scope
 
     Parameters:
-        load_id (str): Manufacturer name of the load. 
-        supply_id (str): Manufacturer name of the supply. 
-        scope_id (str): Manufacturer name of the scope. 
+        load_id: Manufacturer name of the load. 
+        supply_id: Manufacturer name of the supply. 
+        scope_id: Manufacturer name of the scope. 
 
+    Return:
+        scope: SCOPE class object
+        supply: SUPPLY class object
+        load: LOAD class object
     """
     global rm
     rm = pyvisa.ResourceManager()
@@ -85,9 +83,21 @@ class SCOPE:
 
 
     def __write(self, string:str):
+        '''
+        Internal command. Writes to the instrument
+
+        Parameters:
+            string: Any string, will be written directly to the instrument
+        '''
         self.instr.write(string)
     
     def __query(self, string:str):
+        '''
+        Internal command. Asks for data from the instrument, and returns it
+
+        Parameters:
+            string: Any string, will be written directly to the instrument
+        '''
         out = self.instr.query(string)
         return out
     
@@ -100,6 +110,9 @@ class SCOPE:
         self.__query('*OPC?')
 
     def WAIT(self, timeout:int = 20):
+        '''
+        Tells the scope to wait until the current 
+        '''
         self.__write(f'WAIT {timeout}')
         self.OPC()
         
@@ -342,7 +355,7 @@ class SCOPE:
         f.flush()
         f.close()
 
-    def captureWaveforms(self, channel_meas:str, waveform_num:int, test_text:str, popup_label, timeout:float = 60):
+    def captureWaveforms(self, channel_meas:str, waveform_num:int, test_text:str, popup_label, timeout:float = 70):
         time.sleep(1)
         self.clearSweeps()
         self.trigMode('AUTO')
@@ -581,12 +594,27 @@ class DUT:
         self.frequency = float(0)
         self.supply_current = float(0)
 
+        self.dut_type = ''
+
         self.jitter_bool = False
 
         self.folder_name_path = str('')
         self.python_path = str('')
 
-        
+    def getDeviceReport(self):
+        match self.dut_type:
+            case 'Load Switch':
+                return 'Load_Switch_template.xlsm'
+            case 'LDO': 
+                return 'VR_LDO_template.xlsm'
+            case 'Converter': 
+                self.jitter_bool = True
+                return 'VR_Converter_template.xlsm'
+            case 'External Fet Converter': 
+                self.jitter_bool = True
+                return 'VR_External_FET_template.xlsm'
+            case _:
+                return ''
 
     def getSupplyCurrent(self):
         if self.device_input_voltage == self.supply_input_voltage:
@@ -649,13 +677,12 @@ def close_equipment():
         exit
 
 
-def copyTemplate(template_type):
-
-    python_path = os.getcwd()
-
-    shutil.copy2(f'{python_path}\\Templates\\VR_LDO_template.xlsm', f'{python_path}\\example')
-
 def discharge(device:DUT):
+    """
+    
+    Discharges the device under test, and resets supply and load
+
+    """
     try:
         supply.setCurrent(device.getSupplyCurrent())
         supply.output(False)

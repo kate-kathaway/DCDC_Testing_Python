@@ -38,6 +38,57 @@ def quit_and_close(self=None):
     except Exception as e:
         pass
 
+def update_test_selection(event):
+    dut_type = device_type_var.get()
+    match dut_type:
+        case 'Load Switch':
+            EFF_test_var.set(True)
+            RIP_test_var.set(True)
+            TRA_test_var.set(True)
+            OVC_test_var.set(True)
+            VDS_test_var.set(False)
+            DEA_test_var.set(False)
+            TRN_test_var.set(True)
+            extfets_entry_var.set(False)
+        case 'LDO':
+            EFF_test_var.set(True)
+            RIP_test_var.set(True)
+            TRA_test_var.set(True)
+            OVC_test_var.set(True)
+            VDS_test_var.set(False)
+            DEA_test_var.set(False)
+            TRN_test_var.set(True)
+            extfets_entry_var.set(False)
+        case 'Converter':
+            #Jitter is set in the device class
+            EFF_test_var.set(True)
+            RIP_test_var.set(True)
+            TRA_test_var.set(True)
+            OVC_test_var.set(True)
+            VDS_test_var.set(True)
+            DEA_test_var.set(False)
+            TRN_test_var.set(True)
+            extfets_entry_var.set(False)
+        case 'External Fet Converter':
+            #Jitter is set in the device class
+            EFF_test_var.set(True)
+            RIP_test_var.set(True)
+            TRA_test_var.set(True)
+            OVC_test_var.set(True)
+            VDS_test_var.set(True)
+            DEA_test_var.set(True)
+            TRN_test_var.set(True)
+            extfets_entry_var.set(True)
+        case '':
+            EFF_test_var.set(False)
+            RIP_test_var.set(False)
+            TRA_test_var.set(False)
+            OVC_test_var.set(False)
+            VDS_test_var.set(False)
+            DEA_test_var.set(False)
+            TRN_test_var.set(False)
+            extfets_entry_var.set(False)
+
 
 #Function to read all variables as input to main testing function (?)
 def get_variables():
@@ -54,11 +105,23 @@ def get_variables():
 
         device = DUT()
 
+        
+        device.dut_type = device_type_var.get()
+        #['Load Switch', 'LDO', 'Converter', 'External Fet Converter']
+
+        #Eff, RippleJitter, Transient, Overcurrent, VDS, Deadtime, Turnon-off
+
+        
+
         device.test_list.append(EFF_test_var.get())
-        device.test_list.append(LDO_test_var.get())
-        device.test_list.append(SWM_test_var.get())
+        device.test_list.append(RIP_test_var.get())
+        device.test_list.append(TRA_test_var.get())
+        device.test_list.append(OVC_test_var.get())
+        device.test_list.append(VDS_test_var.get())
         device.test_list.append(DEA_test_var.get())
         device.test_list.append(TRN_test_var.get())
+
+
 
         if True in device.test_list:
             pass
@@ -139,7 +202,7 @@ def get_variables():
             device.frequency = float(100000)
 
 
-
+        '''
         if device.test_list[1]:
             rip_test_label.config(background = 'white')
             if transient_load_bool:
@@ -160,8 +223,8 @@ def get_variables():
         if device.test_list[4]:
             trn_test_label.config(background = 'white')
 
+        '''
 
-        
         testing_thread = threading.Thread(target=DCDC_main, args = [window, start_test_button, popup_label, popup_button1, popup_button2, testing_progressbar, scope_connection_ID, supply_connection_ID, load_connection_ID, device], daemon=True)
         testing_thread.start()
 
@@ -212,38 +275,53 @@ quit_test_button = ttk.Button(mainleft_frame, text="Quit", command = quit_and_cl
 quit_test_button.grid(column = 1, row = 1)
 
 
-
-
 #Test choosing
-LDO_test_label = ttk.Label(mainleft_frame, text = 'Tests for low-dropout\n linear regulators')
-LDO_test_label.grid(column = 0, row = 2)
-LDO_test_var = tk.BooleanVar(mainleft_frame, value = False)
-LDO_test_button = ttk.Checkbutton(mainleft_frame, text="LDO", variable = LDO_test_var, offvalue = False, onvalue = True)
-LDO_test_button.grid(column = 1, row = 2)
-
-SWM_test_label = ttk.Label(mainleft_frame, text = 'Tests for switch-mode\n regulators')
-SWM_test_label.grid(column = 0, row = 3)
-SWM_test_var = tk.BooleanVar(mainleft_frame, value = False)
-SWM_test_button = ttk.Checkbutton(mainleft_frame, text="SWM", variable = SWM_test_var, offvalue = False, onvalue = True)
-SWM_test_button.grid(column = 1, row = 3)
-
-EFF_test_label = ttk.Label(mainleft_frame, text = 'All regulator types\n efficiency test')
-EFF_test_label.grid(column = 0, row = 4)
 EFF_test_var = tk.BooleanVar(mainleft_frame, value = False)
-EFF_test_button = ttk.Checkbutton(mainleft_frame, text="EFF", variable = EFF_test_var, offvalue = False, onvalue = True)
-EFF_test_button.grid(column = 1, row = 4)
+EFF_test_button = ttk.Checkbutton(mainleft_frame, text="Efficiency", variable = EFF_test_var, offvalue = False, onvalue = True)
+EFF_test_button.grid(column = 1, row = 2)
 
-DEA_test_label = ttk.Label(mainleft_frame, text = 'All regulator types\n dead-time test')
-DEA_test_label.grid(column = 0, row = 5)
+RIP_test_var = tk.BooleanVar(mainleft_frame, value = False)
+RIP_test_button = ttk.Checkbutton(mainleft_frame, text="Ripple&Jitter", variable = RIP_test_var, offvalue = False, onvalue = True)
+RIP_test_button.grid(column = 1, row = 3)
+
+TRA_test_var = tk.BooleanVar(mainleft_frame, value = False)
+TRA_test_button = ttk.Checkbutton(mainleft_frame, text="Transient", variable = TRA_test_var, offvalue = False, onvalue = True)
+TRA_test_button.grid(column = 1, row = 4)
+
+OVC_test_var = tk.BooleanVar(mainleft_frame, value = False)
+OVC_test_button = ttk.Checkbutton(mainleft_frame, text="OverCurrent", variable = OVC_test_var, offvalue = False, onvalue = True)
+OVC_test_button.grid(column = 1, row = 5)
+
+VDS_test_var = tk.BooleanVar(mainleft_frame, value = False)
+VDS_test_button = ttk.Checkbutton(mainleft_frame, text="Fet VDS Stress", variable = VDS_test_var, offvalue = False, onvalue = True)
+VDS_test_button.grid(column = 1, row = 6)
+
 DEA_test_var = tk.BooleanVar(mainleft_frame, value = False)
-DEA_test_button = ttk.Checkbutton(mainleft_frame, text="DEA", variable = DEA_test_var, offvalue = False, onvalue = True)
-DEA_test_button.grid(column = 1, row = 5)
+DEA_test_button = ttk.Checkbutton(mainleft_frame, text="Deadtime", variable = DEA_test_var, offvalue = False, onvalue = True)
+DEA_test_button.grid(column = 1, row = 7)
 
-TRN_test_label = ttk.Label(mainleft_frame, text = 'All regulator types\n turn on/off')
-TRN_test_label.grid(column = 0, row = 6)
+
 TRN_test_var = tk.BooleanVar(mainleft_frame, value = False)
-TRN_test_button = ttk.Checkbutton(mainleft_frame, text="TRN", variable = TRN_test_var, offvalue = False, onvalue = True)
-TRN_test_button.grid(column = 1, row = 6)
+TRN_test_button = ttk.Checkbutton(mainleft_frame, text="Turn-On/Off", variable = TRN_test_var, offvalue = False, onvalue = True)
+TRN_test_button.grid(column = 1, row = 8)
+
+
+
+
+device_type_list = ['Load Switch','LDO','Converter','External Fet Converter']
+device_type_var = tk.StringVar()
+device_type_cbox = ttk.Combobox(mainleft_frame, textvariable = device_type_var, values = device_type_list, state = 'readonly')
+device_type_cbox.grid(column = 0, row = 2, pady = 15)
+
+device_type_cbox.bind('<<ComboboxSelected>>', update_test_selection)
+
+
+extfets_label = ttk.Label(mainleft_frame, text = 'External Fets?')
+extfets_label.grid(column = 0, row = 3)
+extfets_entry_var = tk.BooleanVar(mainleft_frame, value = False)
+extfets_entry = ttk.Checkbutton(mainleft_frame, variable = extfets_entry_var, offvalue = False, onvalue = True)
+extfets_entry.grid(column = 0, row = 4)
+
 
 
 
@@ -312,70 +390,60 @@ load_equip_cbox.grid(column = 0, row = 6, columnspan = 2)
 
 
 #Device testing parameters
-#device_frame = ttk.Frame(mainleft_frame, relief = "ridge", borderwidth = 2)
-#device_frame.grid(column = 1, row = 2)
-device_label = ttk.Label(mainleft_frame, text = 'Device Parameters', padding=(0,20,5,0))
+device_frame = ttk.Frame(mainleft_frame, borderwidth = 2)
+device_frame.grid(column = 0, row = 9, columnspan = 2)
+device_label = ttk.Label(device_frame, text = 'Device Parameters', padding=(0,20,5,0))
 device_label.grid(column = 0, row = 8, columnspan = 2)
 
 
 
 
-name_label = ttk.Label(mainleft_frame, text = 'Device Name')
+name_label = ttk.Label(device_frame, text = 'Device Name')
 name_label.grid(column = 0, row = 9)
 name_entry_var = tk.StringVar()
-name_entry = ttk.Entry(mainleft_frame, textvariable = name_entry_var)
+name_entry = ttk.Entry(device_frame, textvariable = name_entry_var)
 name_entry.grid(column = 0, row = 10)
 
-extfets_label = ttk.Label(mainleft_frame, text = 'External Fets?')
-extfets_label.grid(column = 1, row = 9)
-extfets_entry_var = tk.BooleanVar(mainleft_frame, value = False)
-extfets_entry = ttk.Checkbutton(mainleft_frame, variable = extfets_entry_var, offvalue = False, onvalue = True)
-extfets_entry.grid(column = 1, row = 10)
 
-voltage_input_label = ttk.Label(mainleft_frame, text = 'DUT VIN')
+voltage_input_label = ttk.Label(device_frame, text = 'DUT VIN')
 voltage_input_label.grid(column = 0, row = 11)
 voltage_input_entry_var = tk.DoubleVar()
-voltage_input_entry = ttk.Spinbox(mainleft_frame, textvariable = voltage_input_entry_var, from_= 0.0, to = 100.0, width = 10)
+voltage_input_entry = ttk.Spinbox(device_frame, textvariable = voltage_input_entry_var, from_= 0.0, to = 100.0, width = 10)
 voltage_input_entry.grid(column = 0, row = 12)
 
 
 
-voltage_supply_label = ttk.Label(mainleft_frame, text = 'Supply VIN')
+voltage_supply_label = ttk.Label(device_frame, text = 'Supply VIN')
 voltage_supply_label.grid(column = 1, row = 11)
 voltage_supply_entry_var = tk.DoubleVar()
-voltage_supply_entry = ttk.Spinbox(mainleft_frame, textvariable = voltage_supply_entry_var, from_= 0.0, to = 100.0, width = 10)
+voltage_supply_entry = ttk.Spinbox(device_frame, textvariable = voltage_supply_entry_var, from_= 0.0, to = 100.0, width = 10)
 voltage_supply_entry.grid(column = 1, row = 12)
 
-
-#voltage_out_max_label = ttk.Label(mainleft_frame, text = 'V-Out Max')
-#voltage_out_max_label.grid(column = 0, row = 13)
-#voltage_out_max_entry_var = tk.DoubleVar()
-#voltage_out_max_entry = ttk.Spinbox(mainleft_frame, textvariable = voltage_out_max_entry_var, from_= 0.0, to = 100.0, width = 10, state = 'readonly')
-#voltage_out_max_entry.grid(column = 0, row = 14)
-
-voltage_out_nom_label = ttk.Label(mainleft_frame, text = 'V-Out Nom')
-voltage_out_nom_label.grid(column = 1, row = 13)
+voltage_out_nom_label = ttk.Label(device_frame, text = 'V-Out Nom')
+voltage_out_nom_label.grid(column = 0, row = 13)
 voltage_out_nom_entry_var = tk.DoubleVar()
-voltage_out_nom_entry = ttk.Spinbox(mainleft_frame, textvariable = voltage_out_nom_entry_var, from_= 0.0, to = 100.0, width = 10)
-voltage_out_nom_entry.grid(column = 1, row = 14)
+voltage_out_nom_entry = ttk.Spinbox(device_frame, textvariable = voltage_out_nom_entry_var, from_= 0.0, to = 100.0, width = 10)
+voltage_out_nom_entry.grid(column = 0, row = 14)
 
-iout_max_label = ttk.Label(mainleft_frame, text = 'IOut Max')
+freq_khrts_label = ttk.Label(device_frame, text = 'Switching Freq (kHz)')
+freq_khrts_label.grid(column = 1, row = 13)
+freq_khrts_entry_var = tk.IntVar()
+freq_khrts_entry = ttk.Spinbox(device_frame, textvariable = freq_khrts_entry_var, from_= 0.0, to = 100.0, width = 10)
+freq_khrts_entry.grid(column = 1, row = 14)
+
+iout_max_label = ttk.Label(device_frame, text = 'IOut Max')
 iout_max_label.grid(column = 0, row = 15)
 iout_max_entry_var = tk.DoubleVar()
-iout_max_entry = ttk.Spinbox(mainleft_frame, textvariable = iout_max_entry_var, from_= 0.0, to = 100.0, width = 10)
+iout_max_entry = ttk.Spinbox(device_frame, textvariable = iout_max_entry_var, from_= 0.0, to = 100.0, width = 10)
 iout_max_entry.grid(column = 0, row = 16)
 
-iout_nom_label = ttk.Label(mainleft_frame, text = 'IOut TDC')
+iout_nom_label = ttk.Label(device_frame, text = 'IOut TDC')
 iout_nom_label.grid(column = 1, row = 15)
 iout_nom_entry_var = tk.DoubleVar()
-iout_nom_entry = ttk.Spinbox(mainleft_frame, textvariable = iout_nom_entry_var, from_= 0.0, to = 100.0, width = 10)
+iout_nom_entry = ttk.Spinbox(device_frame, textvariable = iout_nom_entry_var, from_= 0.0, to = 100.0, width = 10)
 iout_nom_entry.grid(column = 1, row = 16)
 
-freq_khrts_label = ttk.Label(mainleft_frame, text = 'Switching Freq (kHz)')
-freq_khrts_label.grid(column = 0, row = 17)
-freq_khrts_entry_var = tk.IntVar()
-freq_khrts_entry = ttk.Spinbox(mainleft_frame, textvariable = freq_khrts_entry_var, from_= 0.0, to = 100.0, width = 10)
-freq_khrts_entry.grid(column = 0, row = 18)
+
 
 
 
@@ -419,7 +487,7 @@ testing_frame = tk.Frame(mainright_frame, borderwidth = 2)
 testing_frame.grid(column = 0, row = 9, columnspan = 3)
 
 
-
+'''
 test_queue_label =  ttk.Label(testing_frame, text = 'Individual Test Queue:', padding=(0,20,10,0))
 test_queue_label.grid(column = 0, row = 0, columnspan = 2)
 
@@ -455,7 +523,7 @@ trn_test_label.grid(column = 0, row = 8)
 #current_step_label = ttk.Label(testing_frame, text = 'None')
 #current_step_label.grid(column = 0, row = 10, columnspan = 2)
 
-
+'''
 
 testing_progressbar = ttk.Progressbar(testing_frame, name = 'progressbar')
 testing_progressbar.grid(column = 0, row = 11, columnspan = 2)
