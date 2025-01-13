@@ -152,6 +152,9 @@ def DCDC_main(window, start_test_button, popup_label, popup_button1, popup_butto
         copy_csv(device.python_path,device.folder_name_path,'Turn_on_off')
 
 
+
+
+
         #Eff, RippleJitter, Transient, Overcurrent, VDS, Deadtime, Turnon-off
 
         for test_count, test_value in enumerate(device.test_list):

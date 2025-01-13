@@ -76,7 +76,7 @@ def create_folder(input_voltage:float, device_under_test:str, device:DUT):
 
     global python_path
     python_path = os.getcwd()
-    print(python_path)
+    #print(python_path)
     folder_name_path = f'{python_path}\\{results_folder_name}'
     os.makedirs(folder_name_path)
 
@@ -86,7 +86,7 @@ def create_folder(input_voltage:float, device_under_test:str, device:DUT):
     filled_template_name = f'{device.dut_type} - {device.name} - {round(device.supply_input_voltage,1)}V Input'
 
     if template_name != '':
-        shutil.copy2(f'{python_path}\\Templates\\{template_name}', f'{folder_name_path}\\{filled_template_name}')
+        shutil.copy2(f'{python_path}\\Templates\\{template_name}', f'{folder_name_path}\\{filled_template_name}.xlsm')
 
 
 
@@ -178,17 +178,18 @@ def test_eff(popup_label, popup_button1, popup_button2, testing_progressbar, sco
         load.staticCurrent('0')
         supply.output(True)
         time.sleep(0.3)
-        load.output(True)
+        load.output(False)
 
         scope.recall(1)
         #scope.autoSetup()
         scope.setTrigger('C2','POS', device.device_input_voltage)
         scope.setupChannelPercent('C1', device.output_voltage_nom , 20)
         scope.setupChannelPercent('C2', device.device_input_voltage, 20)
+        scope.setParam('P5','C2','MEAN')
 
 
 
-        time.sleep(20)#Sleeps for 10 sec to get accurate 0 load data
+        time.sleep(30)#Sleeps for 30 sec to get accurate 0 load data
         first_loop = True
         for linspace in range(0,26):
 
@@ -198,13 +199,16 @@ def test_eff(popup_label, popup_button1, popup_button2, testing_progressbar, sco
 
             current_set = round(float(linspace*(device.output_current_nom/25)),3)
             load.staticCurrent(current_set)
-            time.sleep(0.5)
+            time.sleep(1)
             scope.forceCapture()
 
             meas_result.append(current_set)
-            meas_result.append(scope.meas('P1','out'))
-            #meas_result.append(scope.meas('P5','out'))
-            meas_result.append(supply.meas('VOLT'))
+            meas_result.append(scope.meas('P2','out'))
+
+            if device.jitter_bool:
+                meas_result.append(supply.meas('VOLT'))                
+            else:
+                meas_result.append(scope.meas('P5','out'))
             meas_result.append(supply.meas('CURR'))
         
             efficiency_results.append(meas_result)
@@ -213,6 +217,8 @@ def test_eff(popup_label, popup_button1, popup_button2, testing_progressbar, sco
                 for repeat in range(18):
                     efficiency_results.append([])
                 first_loop = False
+                load.output(True)
+                time.sleep(0.5)
 
 
         meas_result = []
@@ -223,9 +229,11 @@ def test_eff(popup_label, popup_button1, popup_button2, testing_progressbar, sco
         time.sleep(0.5)
         scope.forceCapture()
 
-        meas_result.append(scope.meas('P1','out'))
-        #meas_result.append(scope.meas('P5','out'))
-        meas_result.append(supply.meas('VOLT'))
+        meas_result.append(scope.meas('P2','out'))
+        if device.jitter_bool:
+            meas_result.append(supply.meas('VOLT'))           
+        else:
+            meas_result.append(scope.meas('P5','out'))
         meas_result.append(supply.meas('CURR'))
 
         efficiency_results.append(meas_result)
@@ -340,6 +348,7 @@ def test_ripple_jitter(popup_label, popup_button1, popup_button2, testing_progre
             scope.setupChannelPercent('C3',current_point,30)
 
             scope.captureWaveforms('P1', 100, f'Running Ripple Test.... \n Step: {current} Load' , popup_label)
+
 
             scope.traceToggle('C2', False)
             scope.traceToggle('C4', False)
@@ -1349,7 +1358,7 @@ def test_turnonoff(popup_label, popup_button1, popup_button2, testing_progressba
                 write_to_csv(device.folder_name_path, 10 + exceloffset, [f'{p6_fall_ms}ms',f'{p5_base}',f'{device.folder_name_path}\\{filename}.png'],'Turn_on_off')
                
 
-            scope.waitUntilTrig(timeout = 120)
+            scope.WAIT(120)
             set_wait(True)
             test_text = 'Adjust horizontal delay and scale until all falling edges are visible. Hit Continue when done'
             listener(popup_button1, popup_button2, 'disabled', popup_label, test_text, testing_progressbar)
@@ -1370,7 +1379,8 @@ def test_turnonoff(popup_label, popup_button1, popup_button2, testing_progressba
     popup_label.config(text = f'Turn-Off Test Setup')
     #Setup for Turnoff test
     scope.timeScale(2)
-    scope.setTrigger('C3', 'NEG', 0.9)
+    #scope.setTrigger('C3', 'NEG', 0.9)
+    scope.setTrigger('C4','NEG',device.output_voltage_nom/2)
     scope.setParam('P5','C4','BASE')
 
     load.output(False)

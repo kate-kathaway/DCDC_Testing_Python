@@ -49,21 +49,31 @@ def debug_config():
     f.close()
     rm.close()
 
-#debug_config()
-'''
 
-global rm
+
+#debug_config()
+
+
+'''
 rm = pyvisa.ResourceManager()
 
-global Scope
-#Scope = rm.open_resource('TCPIP0::10.10.11.76::inst0::INSTR')
-#Scope = rm.open_resource(f'{scope_id}', write_termination='\n', read_termination='\n')
-Scope = rm.open_resource('TCPIP0::10.10.10.128::inst0::INSTR')
-Scope.timeout = 100000
-Scope.clear()
+debugScope = SCOPE(rm, 'TCPIP0::10.10.15.175::inst0::INSTR')
+
+
+filepath = os.getcwd()
+
+now = datetime.now()
+date_time_str = now.strftime(r'%Y-%m-%d--%H-%M-%S')
+
+
+debugScope.screenshot(filepath, 'Capture_12Vin_MAX_Secondary')
+'''
 
 
 
+
+
+'''
 
 meas_out = float(Scope.query((rf"""vbs? 'return=app.measure.p5.out.result.value' """)))
 

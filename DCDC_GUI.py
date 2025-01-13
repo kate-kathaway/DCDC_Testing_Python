@@ -192,6 +192,9 @@ def get_variables():
 
         device.frequency = float(fsw_khrts*1000)
 
+        if device.frequency >0:
+            device.jitter_bool = True
+
 
         for entry_var in [device.device_input_voltage, device.supply_input_voltage, device.output_voltage_max, device.output_voltage_nom, device.output_current_max, device.output_current_nom]:
             if entry_var <= float(0):
