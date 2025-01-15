@@ -1,3 +1,4 @@
+import tkinter.scrolledtext as tkscrolled
 import tkinter as tk
 from tkinter import filedialog
 import tkinter.ttk as ttk #this is for THEMED widgets. Explicitly calls them out
@@ -5,9 +6,9 @@ from DCDCTesting import DCDC_main
 import threading
 from Tests import set_wait, set_skip
 import os
-from DebugDevelopmentFile import debug_config
-
+from DebugDevelopmentFile import *
 from EquipmentClasses import *
+#import tk.scrolledtext as scrolledtext
 
 '''
 NOTES:
@@ -26,6 +27,8 @@ window = tk.Tk(
     className = 'dc-dc Power Testing' #this is the name of the window
 )
 window.resizable(width=False, height=False)
+window.lift()
+window.attributes("-topmost", True)
 
 
 #Grab resource names for displau
@@ -88,6 +91,16 @@ def update_test_selection(event):
             DEA_test_var.set(False)
             TRN_test_var.set(False)
             extfets_entry_var.set(False)
+
+
+def debug_screenshot():
+    debug_filename = filename_entry_var.get()
+    debugscope_connection_ID = resource_list[debug_scope_equip_cbox.current()]
+    try:
+        debugscope_screenshot(debugscope_connection_ID, debug_filename)
+    except Exception as e:
+        print(e)
+        pass
 
 
 #Function to read all variables as input to main testing function (?)
@@ -228,7 +241,9 @@ def get_variables():
 
         '''
 
-        testing_thread = threading.Thread(target=DCDC_main, args = [window, start_test_button, popup_label, popup_button1, popup_button2, testing_progressbar, scope_connection_ID, supply_connection_ID, load_connection_ID, device], daemon=True)
+        device.user_folder_location = file_entry_var.get()
+
+        testing_thread = threading.Thread(target=DCDC_main, args = [window, error_log, start_test_button, popup_label, popup_button1, popup_button2, testing_progressbar, scope_connection_ID, supply_connection_ID, load_connection_ID, device], daemon=True)
         testing_thread.start()
 
 
@@ -244,68 +259,67 @@ def get_variables():
 
 
 
+#Making two tabs
+tabControl = ttk.Notebook(window)
+
+tab1 = ttk.Frame(tabControl)
+tab2 = ttk.Frame(tabControl)
+
+tabControl.add(tab1, text='Main')
+tabControl.add(tab2, text='Debugging & Other Features')
+
+tabControl.pack(expand=1, fill="both")
+
+
 
 
 #Title
-title_label = ttk.Label(window, text = 'Onlogic DCDC Power Testing')
-title_label.grid(column = 0, row = 0, columnspan = 5)
+title_label = ttk.Label(tab1, text = 'Onlogic DCDC Power Testing')
+title_label.grid(column = 0, row = 0, columnspan = 2)
 
 
 
+tests_frame = ttk.Frame(tab1, relief = "ridge", borderwidth = 2)
+tests_frame.grid(column = 0, row = 1, columnspan = 1)
 
-mainleft_frame = ttk.Frame(window, relief = "ridge", borderwidth = 2, padding = 5)
-mainleft_frame.grid(column = 0, row = 1, columnspan = 2)
-
-
-tests_label = ttk.Label(mainleft_frame, text = 'High-Level Tests to Execute')
+tests_label = ttk.Label(tests_frame, text = 'High-Level Tests to Execute')
 tests_label.grid(column = 0, row = 0, columnspan = 2)
 
 
-
-
-mainright_frame = ttk.Frame(window, relief = "ridge", borderwidth = 2)
-mainright_frame.grid(column = 3, row = 1, columnspan = 2)
-
-
-
-
-
-
 #Start and quit buttons
-start_test_button = ttk.Button(mainleft_frame, text="Start", command = get_variables )
+start_test_button = ttk.Button(tests_frame, text="Start", command = get_variables )
 start_test_button.grid(column = 0, row = 1)
-quit_test_button = ttk.Button(mainleft_frame, text="Quit", command = quit_and_close)
+quit_test_button = ttk.Button(tests_frame, text="Quit", command = quit_and_close)
 quit_test_button.grid(column = 1, row = 1)
 
 
 #Test choosing
-EFF_test_var = tk.BooleanVar(mainleft_frame, value = False)
-EFF_test_button = ttk.Checkbutton(mainleft_frame, text="Efficiency", variable = EFF_test_var, offvalue = False, onvalue = True)
+EFF_test_var = tk.BooleanVar(tests_frame, value = False)
+EFF_test_button = ttk.Checkbutton(tests_frame, text="Efficiency", variable = EFF_test_var, offvalue = False, onvalue = True)
 EFF_test_button.grid(column = 1, row = 2)
 
-RIP_test_var = tk.BooleanVar(mainleft_frame, value = False)
-RIP_test_button = ttk.Checkbutton(mainleft_frame, text="Ripple&Jitter", variable = RIP_test_var, offvalue = False, onvalue = True)
+RIP_test_var = tk.BooleanVar(tests_frame, value = False)
+RIP_test_button = ttk.Checkbutton(tests_frame, text="Ripple&Jitter", variable = RIP_test_var, offvalue = False, onvalue = True)
 RIP_test_button.grid(column = 1, row = 3)
 
-TRA_test_var = tk.BooleanVar(mainleft_frame, value = False)
-TRA_test_button = ttk.Checkbutton(mainleft_frame, text="Transient", variable = TRA_test_var, offvalue = False, onvalue = True)
+TRA_test_var = tk.BooleanVar(tests_frame, value = False)
+TRA_test_button = ttk.Checkbutton(tests_frame, text="Transient", variable = TRA_test_var, offvalue = False, onvalue = True)
 TRA_test_button.grid(column = 1, row = 4)
 
-OVC_test_var = tk.BooleanVar(mainleft_frame, value = False)
-OVC_test_button = ttk.Checkbutton(mainleft_frame, text="OverCurrent", variable = OVC_test_var, offvalue = False, onvalue = True)
+OVC_test_var = tk.BooleanVar(tests_frame, value = False)
+OVC_test_button = ttk.Checkbutton(tests_frame, text="OverCurrent", variable = OVC_test_var, offvalue = False, onvalue = True)
 OVC_test_button.grid(column = 1, row = 5)
 
-VDS_test_var = tk.BooleanVar(mainleft_frame, value = False)
-VDS_test_button = ttk.Checkbutton(mainleft_frame, text="Fet VDS Stress", variable = VDS_test_var, offvalue = False, onvalue = True)
+VDS_test_var = tk.BooleanVar(tests_frame, value = False)
+VDS_test_button = ttk.Checkbutton(tests_frame, text="Fet VDS Stress", variable = VDS_test_var, offvalue = False, onvalue = True)
 VDS_test_button.grid(column = 1, row = 6)
 
-DEA_test_var = tk.BooleanVar(mainleft_frame, value = False)
-DEA_test_button = ttk.Checkbutton(mainleft_frame, text="Deadtime", variable = DEA_test_var, offvalue = False, onvalue = True)
+DEA_test_var = tk.BooleanVar(tests_frame, value = False)
+DEA_test_button = ttk.Checkbutton(tests_frame, text="Deadtime", variable = DEA_test_var, offvalue = False, onvalue = True)
 DEA_test_button.grid(column = 1, row = 7)
 
-
-TRN_test_var = tk.BooleanVar(mainleft_frame, value = False)
-TRN_test_button = ttk.Checkbutton(mainleft_frame, text="Turn-On/Off", variable = TRN_test_var, offvalue = False, onvalue = True)
+TRN_test_var = tk.BooleanVar(tests_frame, value = False)
+TRN_test_button = ttk.Checkbutton(tests_frame, text="Turn-On/Off", variable = TRN_test_var, offvalue = False, onvalue = True)
 TRN_test_button.grid(column = 1, row = 8)
 
 
@@ -313,26 +327,30 @@ TRN_test_button.grid(column = 1, row = 8)
 
 device_type_list = ['Load Switch','LDO','Converter','External Fet Converter']
 device_type_var = tk.StringVar()
-device_type_cbox = ttk.Combobox(mainleft_frame, textvariable = device_type_var, values = device_type_list, state = 'readonly')
+device_type_cbox = ttk.Combobox(tests_frame, textvariable = device_type_var, values = device_type_list, state = 'readonly')
 device_type_cbox.grid(column = 0, row = 2, pady = 15)
 
 device_type_cbox.bind('<<ComboboxSelected>>', update_test_selection)
 
 
-extfets_label = ttk.Label(mainleft_frame, text = 'External Fets?')
+
+
+extfets_label = ttk.Label(tests_frame, text = 'External Fets?')
 extfets_label.grid(column = 0, row = 3)
-extfets_entry_var = tk.BooleanVar(mainleft_frame, value = False)
-extfets_entry = ttk.Checkbutton(mainleft_frame, variable = extfets_entry_var, offvalue = False, onvalue = True)
+extfets_entry_var = tk.BooleanVar(tests_frame, value = False)
+extfets_entry = ttk.Checkbutton(tests_frame, variable = extfets_entry_var, offvalue = False, onvalue = True)
 extfets_entry.grid(column = 0, row = 4)
 
 
 
 
-config_frame = tk.Frame(mainright_frame, borderwidth = 2, relief = 'ridge')
+
+
+config_frame = tk.Frame(tab2, borderwidth = 2, relief = 'ridge')
 config_frame.grid(column = 0, row = 0, columnspan = 2)
 
 
-newequip_label = ttk.Label(config_frame, text = 'If having instrument issues,\n press "New Instrument"\n Button, then send \n "NewInstrumentConfig.txt"\n to Kate H', justify = 'left', relief = 'ridge')
+newequip_label = ttk.Label(config_frame, text = 'If having instrument issues press "New Instrument"\n Button, then send "NewInstrumentConfig.txt" to Kate H', justify = 'left')
 newequip_label.grid(column = 0, row = 3, sticky = 'w')
 
 direct_button = ttk.Button(config_frame, text="New Instrument", command = debug_config)
@@ -351,24 +369,64 @@ direct_label = ttk.Label(config_frame, text = 'Please ensure directory matches p
 direct_label.grid(column = 0, row = 0, columnspan = 2)
 
 direct_var = tk.StringVar(value = initial_direct)
-direct_entry = ttk.Entry(config_frame, textvariable = direct_var, state = 'readonly')
+direct_entry = ttk.Entry(config_frame, textvariable = direct_var, state = 'readonly', width = 65)
 direct_entry.grid(column = 0, row = 1, columnspan = 2, sticky = 'nsew')
 
-direct_button = ttk.Button(config_frame, text="Change Directory", command = get_newdirect)
-direct_button.grid(column = 0, row = 2)
+direct_button = ttk.Button(config_frame, text="...", command = get_newdirect, width = 5)
+direct_button.grid(column = 1, row = 1, sticky = 'e')
+
+
+debug_scope_equip_label = ttk.Label(config_frame, text = 'Debug Oscilloscope')
+debug_scope_equip_label.grid(column = 0, row = 4, columnspan = 1)
+scope_equip_var = tk.StringVar()
+debug_scope_equip_cbox = ttk.Combobox(config_frame, textvariable = scope_equip_var, values = resource_alias_list, state = 'readonly')
+debug_scope_equip_cbox.grid(column = 0, row = 5, columnspan = 1)
+
+#debug_supply_equip_label = ttk.Label(config_frame, text = 'Debug Supply')
+#debug_supply_equip_label.grid(column = 0, row = 6, columnspan = 1)
+#supply_equip_var = tk.StringVar()
+#debug_supply_equip_cbox = ttk.Combobox(config_frame, textvariable = supply_equip_var, values = resource_alias_list, state = 'readonly')
+#debug_supply_equip_cbox.grid(column = 0, row = 7, columnspan = 1)
+
+#debug_load_equip_label = ttk.Label(config_frame, text = 'Debug Load')
+#debug_load_equip_label.grid(column = 0, row = 8, columnspan = 1)
+#load_equip_var = tk.StringVar()
+#debug_load_equip_cbox = ttk.Combobox(config_frame, textvariable = load_equip_var, values = resource_alias_list, state = 'readonly')
+#debug_load_equip_cbox.grid(column = 0, row = 9, columnspan = 1)
+
+debug_screenshot_button = ttk.Button(config_frame, text="Screenshot", command = debug_screenshot)
+debug_screenshot_button.grid(column = 1, row =6, columnspan = 1)
+
+filename_label = ttk.Label(config_frame, text = 'Screenshot File Name:')
+filename_label.grid(column = 1, row = 4, columnspan = 1)
+filename_entry_var = tk.StringVar()
+filename_entry = ttk.Entry(config_frame, textvariable = filename_entry_var)
+filename_entry.grid(column = 1, row = 5, columnspan = 1)
+
+filename_entry_var.set('DefaultScreenshot')
+
+
+run_testprog_button = ttk.Button(config_frame, text="Run TestScript Function In DebugDevolopmentFile", command = TestScript)
+run_testprog_button.grid(column = 0, row = 6, columnspan = 1)
+
+
+error_log = tkscrolled.ScrolledText(config_frame, height = 10, width = 50)
+error_log.grid(column = 0, row = 7, columnspan = 2)
+error_log.indexnum = 0.0
+
+
 
 
 #Instrument picking
-
-instrument_frame = tk.Frame(mainright_frame, borderwidth = 2)
-instrument_frame.grid(column = 0, row = 1, columnspan = 2)
+instrument_frame = tk.Frame(tab1, borderwidth = 2)
+instrument_frame.grid(column = 1, row = 2, columnspan = 1)
 
 instrument_label = ttk.Label(instrument_frame, text = 'Hardware Selection')
 instrument_label.grid(column = 0, row = 0, columnspan = 2)
 
 scope_equip_label = ttk.Label(instrument_frame, text = 'Oscilloscope')
 scope_equip_label.grid(column = 0, row = 1, columnspan = 2)
-scope_equip_var = tk.StringVar()
+# Scope var is shared with debug menu
 scope_equip_cbox = ttk.Combobox(instrument_frame, textvariable = scope_equip_var, values = resource_alias_list, state = 'readonly')
 scope_equip_cbox.grid(column = 0, row = 2, columnspan = 2)
 
@@ -393,9 +451,9 @@ load_equip_cbox.grid(column = 0, row = 6, columnspan = 2)
 
 
 #Device testing parameters
-device_frame = ttk.Frame(mainleft_frame, borderwidth = 2)
-device_frame.grid(column = 0, row = 9, columnspan = 2)
-device_label = ttk.Label(device_frame, text = 'Device Parameters', padding=(0,20,5,0))
+device_frame = ttk.Frame(tab1, borderwidth = 2)
+device_frame.grid(column = 1, row = 1, columnspan = 1)
+device_label = ttk.Label(device_frame, text = 'Device Parameters')
 device_label.grid(column = 0, row = 8, columnspan = 2)
 
 
@@ -447,13 +505,31 @@ iout_nom_entry = ttk.Spinbox(device_frame, textvariable = iout_nom_entry_var, fr
 iout_nom_entry.grid(column = 1, row = 16)
 
 
+#folder_direct = os.getcwd()
 
+file_label = ttk.Label(device_frame, text = 'Folder Location')
+file_label.grid(column = 0, row = 17, columnspan = 2)
+file_entry_var = tk.StringVar()
+file_entry_var.set(os.getcwd())
+file_entry = ttk.Entry(device_frame, textvariable = file_entry_var, state = 'readonly', width = 35)
+file_entry.grid(column = 0, row = 18, columnspan = 2, sticky = 'nsw')
+
+
+
+def new_folder_location():
+    selected_direct = filedialog.askdirectory(initialdir = file_entry_var.get())
+
+    if selected_direct:
+        file_entry_var.set(selected_direct)
+
+folder_button = ttk.Button(device_frame, text="...", width = 2, command = new_folder_location)
+folder_button.grid(column = 1, row = 18, columnspan = 1, sticky = 'e')
 
 
 
 #Load Points selection
-loadpoints_frame = ttk.Frame(master = mainleft_frame)
-loadpoints_frame.grid(column = 0, row = 19, columnspan = 2)
+loadpoints_frame = ttk.Frame(tab1)
+loadpoints_frame.grid(column = 0, row = 2, columnspan = 1)
 
 loadpoints_label = ttk.Label(loadpoints_frame, text = 'Current Points to Test', padding=(0,20,5,0))
 loadpoints_label.grid(column = 0, row = 17, columnspan = 2)
@@ -485,48 +561,13 @@ transient_load_button.grid(column = 1, row = 21)
 
 
 
+
+
+
 #Testing interface
-testing_frame = tk.Frame(mainright_frame, borderwidth = 2)
-testing_frame.grid(column = 0, row = 9, columnspan = 3)
+testing_frame = tk.Frame(tab1, borderwidth = 2)
+testing_frame.grid(column = 0, row = 10, columnspan = 2)
 
-
-'''
-test_queue_label =  ttk.Label(testing_frame, text = 'Individual Test Queue:', padding=(0,20,10,0))
-test_queue_label.grid(column = 0, row = 0, columnspan = 2)
-
-
-eff_test_label =  ttk.Label(testing_frame, text = 'Efficiency', relief = 'ridge', background = 'grey')
-eff_test_label.grid(column = 0, row = 1)
-
-rip_test_label =  ttk.Label(testing_frame, text = 'Ripple', relief = 'ridge', background = 'grey')
-rip_test_label.grid(column = 0, row = 2)
-
-jit_test_label =  ttk.Label(testing_frame, text = 'Jitter', relief = 'ridge', background = 'grey')
-jit_test_label.grid(column = 0, row = 3)
-
-tra_test_label =  ttk.Label(testing_frame, text = 'Transient', relief = 'ridge', background = 'grey')
-tra_test_label.grid(column = 0, row = 4)
-
-ovc_test_label =  ttk.Label(testing_frame, text = 'Overcurrent', relief = 'ridge', background = 'grey')
-ovc_test_label.grid(column = 0, row = 5)
-
-vds_test_label =  ttk.Label(testing_frame, text = 'VDS', relief = 'ridge', background = 'grey')
-vds_test_label.grid(column = 0, row = 6)
-
-dea_test_label =  ttk.Label(testing_frame, text = 'Deadtime', relief = 'ridge', background = 'grey')
-dea_test_label.grid(column = 0, row = 7)
-
-trn_test_label =  ttk.Label(testing_frame, text = 'Turn On/Off', relief = 'ridge', background = 'grey')
-trn_test_label.grid(column = 0, row = 8)
-
-
-#current_test_label =  ttk.Label(testing_frame, text = 'Current Step:',padding=(0,10,10,0))
-#current_test_label.grid(column = 0, row = 9, columnspan = 2)
-
-#current_step_label = ttk.Label(testing_frame, text = 'None')
-#current_step_label.grid(column = 0, row = 10, columnspan = 2)
-
-'''
 
 testing_progressbar = ttk.Progressbar(testing_frame, name = 'progressbar')
 testing_progressbar.grid(column = 0, row = 11, columnspan = 2)
@@ -547,5 +588,7 @@ popup_button2.grid(column = 1, row = 12)
 window.bind('<Escape>', quit_and_close)
 
 #window.bind('<Enter>', set_wait)
+
+
 
 window.mainloop()

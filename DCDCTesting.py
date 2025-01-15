@@ -67,7 +67,7 @@ resource_list, resource_alias_list_unused = list_equipment()
 
 
 #Main DC testing function. Gets inputs via the DC DC Gui. Set parameters above for debug purposes
-def DCDC_main(window, start_test_button, popup_label, popup_button1, popup_button2, testing_progressbar, scope_connection_ID:str, supply_connection_ID:str, load_connection_ID:str, device:DUT):
+def DCDC_main(window, error_log, start_test_button, popup_label, popup_button1, popup_button2, testing_progressbar, scope_connection_ID:str, supply_connection_ID:str, load_connection_ID:str, device:DUT):
     '''
     The main function to select the proper tests from Tests.py for the selected options by user from the GUI. Could be run indeendently for debug purposes
 
@@ -161,7 +161,7 @@ def DCDC_main(window, start_test_button, popup_label, popup_button1, popup_butto
             supply.output(False)
             if test_value:
                 if test_count == 0:
-                    test_eff(popup_label, popup_button1, popup_button2, testing_progressbar, scope, supply, load, device)
+                    test_eff(error_log, popup_label, popup_button1, popup_button2, testing_progressbar, scope, supply, load, device)
                     discharge(device)
                 elif test_count == 1:
                     test_ripple_jitter(popup_label, popup_button1, popup_button2, testing_progressbar, scope, supply, load, device)
@@ -195,7 +195,8 @@ def DCDC_main(window, start_test_button, popup_label, popup_button1, popup_butto
         start_test_button.config(state = 'enabled')
         popup_label.config(background = 'red')
         discharge(device)
-        raise Exception('Error in DC DC Testing Main Script')
+        error_update(error_log, e)
+        #raise Exception('Error in DC DC Testing Main Script')
 
 
 

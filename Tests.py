@@ -38,6 +38,7 @@ def listener(popup_button1, popup_button2, popup_button2_state:str, popup_label,
     testing_progressbar.stop()
     testing_progressbar.config(mode = 'determinate')
 
+
     if listen_skip:
         while listen_skip and listen_val:
             listen_val = get_wait()
@@ -55,7 +56,9 @@ def listener(popup_button1, popup_button2, popup_button2_state:str, popup_label,
     popup_label.config(background = 'white')
     set_wait()
   
-
+def error_update(error_log, new_error):
+    error_log.indexnum +=1.0
+    error_log.insert(error_log.indexnum, str(new_error))
 
 
 def create_folder(input_voltage:float, device_under_test:str, device:DUT):
@@ -77,7 +80,8 @@ def create_folder(input_voltage:float, device_under_test:str, device:DUT):
     global python_path
     python_path = os.getcwd()
     #print(python_path)
-    folder_name_path = f'{python_path}\\{results_folder_name}'
+    global folder_name_path
+    folder_name_path = f'{device.user_folder_location}\\{results_folder_name}'
     os.makedirs(folder_name_path)
 
 
@@ -155,7 +159,7 @@ def write_to_csv(folder_name_path:str, linenum:int, information, filename:str):
 
 
 
-def test_eff(popup_label, popup_button1, popup_button2, testing_progressbar, scope:SCOPE, supply:SUPPLY, load:LOAD, device:DUT):
+def test_eff(error_log, popup_label, popup_button1, popup_button2, testing_progressbar, scope:SCOPE, supply:SUPPLY, load:LOAD, device:DUT):
     """
     
     Efficiency test as defined in DC DC testing manual
@@ -192,6 +196,8 @@ def test_eff(popup_label, popup_button1, popup_button2, testing_progressbar, sco
         time.sleep(30)#Sleeps for 30 sec to get accurate 0 load data
         first_loop = True
         for linspace in range(0,26):
+
+            
 
             meas_result = []
 
@@ -240,7 +246,7 @@ def test_eff(popup_label, popup_button1, popup_button2, testing_progressbar, sco
 
         discharge(device)
 
-        with open(f'{python_path}\\{results_folder_name}\\efficiency.csv', 'w', newline='') as csvfile:
+        with open(f'{folder_name_path}\\efficiency.csv', 'w', newline='') as csvfile:
             writer = csv.writer(csvfile)
             writer.writerows(efficiency_results)
             csvfile.close()
@@ -675,13 +681,14 @@ def test_overcurrent(popup_label, popup_button1, popup_button2, testing_progress
         stepsize = 0
         voltage_level = scope.meas('P1','min')
         overcurrent_level = float(device.output_current_max)
+        oc_reason = 'blank'
 
         if device.output_current_max <10:
             stepsize = 0.1
         elif device.output_current_max>= 10:
             stepsize = 1
 
-        while (voltage_level >= float((device.output_voltage_nom*0.9))) and ((overcurrent_level+1) < load.max_power/device.output_voltage_nom):# and (overcurrent_level < 4*device.output_current_max):    #350W is max of the chroma load. Overpower prot after that
+        while True:# and (overcurrent_level < 4*device.output_current_max):    #350W is max of the chroma load. Overpower prot after that
             overcurrent_level = overcurrent_level + stepsize
 
             popup_label.config(text = f'Running Overcurrent Test... \n Current = {round(overcurrent_level,2)}A')
@@ -1189,6 +1196,7 @@ def test_turnonoff(popup_label, popup_button1, popup_button2, testing_progressba
     popup_label.config(text = f'Turn-On Test Setup')
 
     scope.recall(3)
+    scope.trigMode('STOP')
     supply.output(False)
     load.output(False)
     load.mode('CC','H')
@@ -1208,6 +1216,7 @@ def test_turnonoff(popup_label, popup_button1, popup_button2, testing_progressba
     scope.offsetVert('C4', f'-{2*1.3*device.output_voltage_nom}')
 
    
+
     scope.setTrigger('C4','POS',device.output_voltage_nom/2)
 
     current_testing = device.makeLoadPointList(['max','transient'])
@@ -1237,9 +1246,9 @@ def test_turnonoff(popup_label, popup_button1, popup_button2, testing_progressba
 
 
                 scope.trigMode('SINGLE')
-                time.sleep(5)
+                time.sleep(10)
                 supply.output(True)
-                scope.WAIT(10) #Waits until capture is taken
+                scope.WAIT() #Waits until capture is taken
                 supply.output(False)
                 load.mode('CC','H')
 
@@ -1368,7 +1377,6 @@ def test_turnonoff(popup_label, popup_button1, popup_button2, testing_progressba
             test_text = 'Adjust horizontal delay and scale until ONLY falling edge of C3 and C4 are visible (Zoom in). Hit Continue when done'
             listener(popup_button1, popup_button2, 'disabled', popup_label, test_text, testing_progressbar)
             falling_zoom()
-
     set_wait(True)
     test_text = 'Channel 1: Input Voltage \n Channel 2: VCC Voltage \n Channel 3: Enable \n Channel 4: Output Voltage \n Setup Complete?'
     listener(popup_button1, popup_button2, 'disabled', popup_label, test_text, testing_progressbar)
@@ -1379,8 +1387,10 @@ def test_turnonoff(popup_label, popup_button1, popup_button2, testing_progressba
     popup_label.config(text = f'Turn-Off Test Setup')
     #Setup for Turnoff test
     scope.timeScale(2)
-    #scope.setTrigger('C3', 'NEG', 0.9)
-    scope.setTrigger('C4','NEG',device.output_voltage_nom/2)
+
+    scope.setTrigger('C4','NEG',3*device.output_voltage_nom/4)
+
+
     scope.setParam('P5','C4','BASE')
 
     load.output(False)

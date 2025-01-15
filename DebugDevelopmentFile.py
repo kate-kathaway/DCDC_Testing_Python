@@ -50,9 +50,32 @@ def debug_config():
     rm.close()
 
 
+def debugscope_screenshot(scope_ID:str, filename:str):
+    rm = pyvisa.ResourceManager()
 
+    debugScope = SCOPE(rm, scope_ID, 10000)
+
+    filepath = os.getcwd()
+
+    debugScope.screenshot(filepath, filename)
+
+    debugScope.instr.close()
+    rm.close()
 #debug_config()
 
+def TestScript():
+    rm = pyvisa.ResourceManager()
+    scope_ID = 'TCPIP0::10.10.15.175::inst0::INSTR'
+    supply_ID = 'USB0::0x2EC7::0x9200::800886011777110059::0::INSTR'
+    load_ID = 'USB0::0x0A69::0x0880::630041500253::0::INSTR'
+
+    debugScope = SCOPE(rm, scope_ID, 10000)
+    debugSupply = SUPPLY(rm, supply_ID)
+    debugLoad = LOAD(rm,load_ID)
+
+    print('x')
+
+    close_equipment()
 
 '''
 rm = pyvisa.ResourceManager()

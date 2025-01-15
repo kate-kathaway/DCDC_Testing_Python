@@ -59,7 +59,7 @@ def initialize_equipment(scope_id:str,supply_id:str,load_id:str):
 
 
 class SCOPE:
-    def __init__(self, rm, connection_ID, timeout_ms = 30000):
+    def __init__(self, rm, connection_ID, timeout_ms = 3*60*1000):
         """
         Creates a SCOPE object. For remote control of oscilloscopes
 
@@ -108,6 +108,7 @@ class SCOPE:
         out = self.instr.query(string)
         return out
     
+
 
     def OPC(self):
         '''
@@ -336,9 +337,13 @@ class SCOPE:
            parameter: What output of measure channel to get. 'out','mean','min','max','sdev','num'
            multiplier: Multiplies the result, before rounding to 3 decimal places for readability
         '''
-        meas_out = float(self.__query((rf"""vbs? 'return=app.measure.{channel_meas}.{parameter}.result.value' """)))
-        meas_out_round = round(multiplier*meas_out,3)
-        return meas_out_round
+        try:
+            meas_out = float(self.__query((rf"""vbs? 'return=app.measure.{channel_meas}.{parameter}.result.value' """)))
+            meas_out_round = round(multiplier*meas_out,3)
+            return meas_out_round
+        except Exception as e:
+            raise e
+        
     
     def zoomHorDelay(self, channel_zoom:str, delay_time:float):
         '''
@@ -855,6 +860,7 @@ class DUT:
 
         self.jitter_bool = False
 
+        self.user_folder_location = ''
         self.folder_name_path = str('')
         self.python_path = str('')
 
