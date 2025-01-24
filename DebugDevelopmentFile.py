@@ -3,6 +3,7 @@ import os
 from datetime import datetime
 from EquipmentClasses import *
 import time
+import threading
 
 
 def debug_config():
@@ -73,7 +74,32 @@ def TestScript():
     debugSupply = SUPPLY(rm, supply_ID)
     debugLoad = LOAD(rm,load_ID)
 
-    print('x')
+    def func1():
+        debugSupply.output(False)
+        voltage = 24
+        debugSupply.setVoltage(voltage)
+        debugSupply.output(True)
+
+        percent_vary = 5
+        per_pos = 1 + (percent_vary/100)
+        per_neg = 1 - (percent_vary/100)
+
+        while True:
+            debugSupply.setVoltage(voltage*per_pos)
+            time.sleep(0.01)
+            debugSupply.setVoltage(voltage*per_neg)
+            time.sleep(0.01)
+
+
+
+
+
+    #testing_thread_1 = threading.Thread(target = func1)
+    #testing_thread_1.start()
+    supply.system('LOCAL')
+    time.sleep(3)
+
+    #print('x')
 
     close_equipment()
 

@@ -102,6 +102,22 @@ def debug_screenshot():
         print(e)
         pass
 
+def button_disable(main_script:bool):
+    if main_script:
+        popup_label.config(background = 'white')
+        start_test_button.config(state = 'disabled')
+
+        debug_screenshot_button.config(state = 'disabled')
+        direct_button.config(state = 'disabled')
+        newinst_button.config(state = 'disabled')
+        run_testprog_button.config(state = 'disabled')
+    else:
+        start_test_button.config(state = 'enabled')
+
+        debug_screenshot_button.config(state = 'enabled')
+        direct_button.config(state = 'enabled')
+        newinst_button.config(state = 'enabled')
+        run_testprog_button.config(state = 'enabled')
 
 #Function to read all variables as input to main testing function (?)
 def get_variables():
@@ -112,9 +128,7 @@ def get_variables():
     """
     try:
 
-        popup_label.config(background = 'white')
-        start_test_button.config(state = 'disabled')
-
+        button_disable(True)
 
         device = DUT()
 
@@ -218,28 +232,6 @@ def get_variables():
             device.frequency = float(100000)
 
 
-        '''
-        if device.test_list[1]:
-            rip_test_label.config(background = 'white')
-            if transient_load_bool:
-                tra_test_label.config(background = 'white')
-            ovc_test_label.config(background = 'white')
-
-        if device.test_list[2]:
-            rip_test_label.config(background = 'white')
-            jit_test_label.config(background = 'white')
-            if transient_load_bool:
-                tra_test_label.config(background = 'white')
-            ovc_test_label.config(background = 'white')
-            vds_test_label.config(background = 'white')
-        if device.test_list[0]:
-            eff_test_label.config(background = 'white')
-        if device.test_list[3]:
-            dea_test_label.config(background = 'white')
-        if device.test_list[4]:
-            trn_test_label.config(background = 'white')
-
-        '''
 
         device.user_folder_location = file_entry_var.get()
 
@@ -250,7 +242,7 @@ def get_variables():
 
     except Exception as e:
         popup_label.config(text = f'Whoops! Error: \n {e}')
-        start_test_button.config(state = 'enabled')
+        button_disable(False)
         popup_label.config(background = 'red')
    
 
@@ -346,15 +338,15 @@ extfets_entry.grid(column = 0, row = 4)
 
 
 
+
 config_frame = tk.Frame(tab2, borderwidth = 2, relief = 'ridge')
 config_frame.grid(column = 0, row = 0, columnspan = 2)
-
 
 newequip_label = ttk.Label(config_frame, text = 'If having instrument issues press "New Instrument"\n Button, then send "NewInstrumentConfig.txt" to Kate H', justify = 'left')
 newequip_label.grid(column = 0, row = 3, sticky = 'w')
 
-direct_button = ttk.Button(config_frame, text="New Instrument", command = debug_config)
-direct_button.grid(column = 1, row = 3)
+newinst_button = ttk.Button(config_frame, text="New Instrument", command = debug_config)
+newinst_button.grid(column = 1, row = 3)
 
 initial_direct = os.getcwd()
 
@@ -381,18 +373,6 @@ debug_scope_equip_label.grid(column = 0, row = 4, columnspan = 1)
 scope_equip_var = tk.StringVar()
 debug_scope_equip_cbox = ttk.Combobox(config_frame, textvariable = scope_equip_var, values = resource_alias_list, state = 'readonly')
 debug_scope_equip_cbox.grid(column = 0, row = 5, columnspan = 1)
-
-#debug_supply_equip_label = ttk.Label(config_frame, text = 'Debug Supply')
-#debug_supply_equip_label.grid(column = 0, row = 6, columnspan = 1)
-#supply_equip_var = tk.StringVar()
-#debug_supply_equip_cbox = ttk.Combobox(config_frame, textvariable = supply_equip_var, values = resource_alias_list, state = 'readonly')
-#debug_supply_equip_cbox.grid(column = 0, row = 7, columnspan = 1)
-
-#debug_load_equip_label = ttk.Label(config_frame, text = 'Debug Load')
-#debug_load_equip_label.grid(column = 0, row = 8, columnspan = 1)
-#load_equip_var = tk.StringVar()
-#debug_load_equip_cbox = ttk.Combobox(config_frame, textvariable = load_equip_var, values = resource_alias_list, state = 'readonly')
-#debug_load_equip_cbox.grid(column = 0, row = 9, columnspan = 1)
 
 debug_screenshot_button = ttk.Button(config_frame, text="Screenshot", command = debug_screenshot)
 debug_screenshot_button.grid(column = 1, row =6, columnspan = 1)

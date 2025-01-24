@@ -603,6 +603,9 @@ class SUPPLY:
         meas_out_round = round(meas_out,3)
         return meas_out_round
     
+    def system(self, syst_mode:str):
+        self.__write(f'SYSTEM:{syst_mode}')
+    
 
 class LOAD:
     def __init__(self, rm, connection_ID:str, measurement_delay:float = 0.2):
