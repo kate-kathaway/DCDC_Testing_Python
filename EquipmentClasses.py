@@ -394,6 +394,13 @@ class SUPPLY:
         out = self.instr.query(string)
         return out
     
+    def OPC(self):
+        '''
+        Completes if supply has executed all commands
+        '''
+        #This way we can do a listen command IF needed
+        self.__query('*OPC?')
+    
 
 
     def output(self, out:bool):
@@ -418,6 +425,18 @@ class SUPPLY:
         meas_out_round = round(meas_out,3)
         return meas_out_round
     
+<<<<<<< Updated upstream
+=======
+    def system(self, syst_mode:str):
+        '''
+        Sets the supply to local or remote mode
+
+        Parameters:
+            syst_mode: Either remote or local mode for the supply 'REM','LOC'
+        '''
+        self.__write(f'SYST:{syst_mode}')
+    
+>>>>>>> Stashed changes
 
 class LOAD:
     def __init__(self, rm, connection_ID:str, measurement_delay:float = 0.2):
@@ -560,6 +579,15 @@ class LOAD:
         meas_out = float(self.__query(f'MEAS:{meas_unit}?'))    
         meas_out_round = round(meas_out,3)
         return meas_out_round
+    
+    def system(self, syst_mode:str):
+        '''
+        Sets the load to local or remote mode
+
+        Parameters:
+            syst_mode: Either remote or local mode for the load 'REM','LOC'
+        '''
+        self.__write(f'SYSTEM:{syst_mode}')
 
 
 class DUT:
@@ -626,10 +654,13 @@ def close_equipment():
 
     """
     try:
+        load.system('LOC')
         load.mode('CC','H')
         load.staticCurrent(float(0.1))
         load.output(True)
+        
         supply.output(False)
+        supply.system('LOC')
 
         load.instr.close()
         supply.instr.close()

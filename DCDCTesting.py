@@ -98,22 +98,57 @@ def DCDC_main(window, start_test_button, popup_label, popup_button1, popup_butto
         '''
 
 
-    
-    try:
-
-        #Grab IDs of the equipment
-        #Loadname_array, Supplyname_array, Scopename_array = initialize_equipment(resource_list[load_pos], resource_list[supply_pos], resource_list[scope_pos])
-        #Load_ID = Loadname_array[1]
-        #Supply_ID = Supplyname_array[1]
-        #Scope_ID = Scopename_array[1]
+    scope, supply, load = initialize_equipment(scope_connection_ID, supply_connection_ID, load_connection_ID)
 
 
+    supply.output(False)
+    supply.setCurrent(device.getSupplyCurrent())
+    supply.setVoltage(device.supply_input_voltage)
+
+    #Create folder in current python path
+    device.folder_name_path, device.python_path = create_folder(device.supply_input_voltage, device.name, device)
 
 
-        scope, supply, load = initialize_equipment(scope_connection_ID, supply_connection_ID, load_connection_ID)
+    #Sets up and prints the test_Conditions file. This could probably be changed over to the "copy and move" file function created later
+    test_conditions = []
+    test_conditions.append('Regulator Name')
+    test_conditions.append(f'{device.name}')
+    test_conditions.append('Nominal Vout')
+    test_conditions.append(f'{device.output_voltage_nom}')
+    test_conditions.append('Nominal Vin')
+    test_conditions.append(f'{device.device_input_voltage}')
+    test_conditions.append('ICCmax')
+    test_conditions.append(f'{device.output_current_max}')
+    test_conditions.append('ICC TDC')
+    test_conditions.append(f'{device.output_current_nom}')
+    test_conditions.append('Transient Current')
+    test_conditions.append(f'{device.output_current_nom/2}')
+    test_conditions.append('Transient Slew Rate')
+    test_conditions.append('3')
+    test_conditions.append('Switching Frequency khz (Design)')
+    test_conditions.append(f'{device.frequency/1000}')
+
+    with open(f'{device.folder_name_path}\\test_conditions.csv', 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        for line in test_conditions:
+            writer.writerow([line])
+        csvfile.close()
 
 
+    #Copies the rest of the CSV files
+    copy_csv(device.python_path,device.folder_name_path,'Results')
+    copy_csv(device.python_path,device.folder_name_path,'deadtime')
+    copy_csv(device.python_path,device.folder_name_path,'Turn_on_off')
+
+
+
+
+
+    #Eff, RippleJitter, Transient, Overcurrent, VDS, Deadtime, Turnon-off
+
+    for test_count, test_value in enumerate(device.test_list):
         supply.output(False)
+<<<<<<< Updated upstream
         supply.setCurrent(device.getSupplyCurrent())
         supply.setVoltage(device.supply_input_voltage)
 
@@ -185,21 +220,53 @@ def DCDC_main(window, start_test_button, popup_label, popup_button1, popup_butto
 
                 else:
                     continue      
+=======
+        if test_value:
+            if test_count == 0:
+                test_eff(error_log, popup_label, popup_button1, popup_button2, testing_progressbar, scope, supply, load, device)
+                discharge(device)
+            elif test_count == 1:
+                test_ripple_jitter(error_log, popup_label, popup_button1, popup_button2, testing_progressbar, scope, supply, load, device)
+                discharge(device)
+            elif test_count == 2:
+                if 'transient' in device.load_list:
+                    test_transient(error_log, popup_label, popup_button1, popup_button2, testing_progressbar, scope, supply, load, device)
+                discharge(device)
+            elif test_count == 3:
+                test_overcurrent(error_log, popup_label, popup_button1, popup_button2, testing_progressbar, scope, supply, load, device)
+                discharge(device)
+            elif test_count == 4:
+                test_vds(error_log, popup_label, popup_button1, popup_button2, testing_progressbar, scope, supply, load, device)
+                discharge(device)
+            elif test_count == 5:
+                test_deadtime(error_log, popup_label, popup_button1, popup_button2, testing_progressbar, scope, supply, load, device)
+                discharge(device)
+            elif test_count == 6: 
+                test_turnonoff(error_log, popup_label, popup_button1, popup_button2, testing_progressbar, scope, supply, load, device)
+                discharge(device)
+>>>>>>> Stashed changes
             else:
-                continue
-        window.quit()
-        close_equipment()
+                continue      
+        else:
+            continue
+    window.quit()
+    close_equipment()
 
 
     
+<<<<<<< Updated upstream
     except Exception as e:
         start_test_button.config(state = 'enabled')
         popup_label.config(background = 'red')
         discharge(device)
         raise Exception('Error in DC DC Testing Main Script')
+=======
+    #except Exception as e:
+    #    start_test_button.config(state = 'enabled')
+    #    popup_label.config(background = 'red')
+    #    discharge(device)
+    #    error_update(error_log, e)
+    #    #raise Exception('Error in DC DC Testing Main Script')
+>>>>>>> Stashed changes
 
-
-
-#Runs the function, if debugging
-#DCDC_main(LDO_bool, SWM_bool, EFF_bool, DEA_bool, TRN_bool, scope_pos, supply_pos, load_pos, min_load_bool, tdc_load_bool, max_load_bool, transient_load_bool, device_name, extfets_bool, input_voltage, output_voltage_max, output_voltage_nom, iout_max, iout_nom, fsw, resource_list)
 

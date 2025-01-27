@@ -50,6 +50,57 @@ def debug_config():
     rm.close()
 
 #debug_config()
+<<<<<<< Updated upstream
+=======
+
+def TestScript():
+    rm = pyvisa.ResourceManager()
+    scope_ID = 'TCPIP0::10.10.15.175::inst0::INSTR'
+    supply_ID = 'USB0::0x2EC7::0x9200::800886011777110059::0::INSTR'
+    load_ID = 'USB0::0x0A69::0x0880::630041500253::0::INSTR'
+
+    debugScope = SCOPE(rm, scope_ID, 10000)
+    debugSupply = SUPPLY(rm, supply_ID)
+    debugLoad = LOAD(rm,load_ID)
+
+    def func1():
+        debugSupply.output(False)
+        voltage = 24
+        debugSupply.setVoltage(voltage)
+        debugSupply.output(True)
+
+        percent_vary = 3
+        per_pos = 1 + (percent_vary/100)
+        per_neg = 1 - (percent_vary/100)
+
+        run = False
+
+        while run:
+            try:
+                debugSupply.setVoltage(voltage*per_pos)
+                debugSupply.OPC()
+                debugSupply.setVoltage(voltage*per_neg)
+                debugSupply.OPC()
+            except Exception as e:
+                print('Debug Error')
+                run = False
+ 
+        debugLoad.system('LOC')
+
+
+            
+
+
+
+    testing_thread_1 = threading.Thread(target = func1, daemon = True)
+
+
+    testing_thread_1.start()
+
+
+
+
+>>>>>>> Stashed changes
 '''
 
 global rm

@@ -55,6 +55,12 @@ def listener(popup_button1, popup_button2, popup_button2_state:str, popup_label,
     popup_label.config(background = 'white')
     set_wait()
   
+<<<<<<< Updated upstream
+=======
+def error_update(error_log, location:str, new_error):
+    error_log.indexnum +=1.0
+    error_log.insert(error_log.indexnum, f'Error @ {location}: {new_error}')
+>>>>>>> Stashed changes
 
 
 
@@ -253,13 +259,16 @@ def test_eff(popup_label, popup_button1, popup_button2, testing_progressbar, sco
     set_wait(True)
     test_text = 'Efficiency Test Setup: \n Channel 1: Output Voltage \n Channel 2: Input Voltage \n Channel 3: Load Current (BNC) \n Channel 4: Low-Side Mosfet (Differential) \n Setup Complete?'
     listener(popup_button1, popup_button2, 'disabled', popup_label, test_text, testing_progressbar)
-    eff_main()
+    try:
+        eff_main()
+    except Exception as e: 
+        error_update(error_log, 'Efficency Test', e)
 
 
 
 
 
-def test_ripple_jitter(popup_label, popup_button1, popup_button2, testing_progressbar, scope:SCOPE, supply:SUPPLY, load:LOAD, device:DUT):
+def test_ripple_jitter(error_log, popup_label, popup_button1, popup_button2, testing_progressbar, scope:SCOPE, supply:SUPPLY, load:LOAD, device:DUT):
 
     """
     
@@ -336,22 +345,23 @@ def test_ripple_jitter(popup_label, popup_button1, popup_button2, testing_progre
             supply.output(True)
             current_point = float(0)
             
+            try: 
+                if current == 'tdc':
+                    current_point = device.output_current_nom
+                    load.staticCurrent(current_point)
+                    load.output(True)
+                    current_count = 1
+                elif current == 'max':
+                    current_point = device.output_current_max
+                    load.staticCurrent(current_point)
+                    load.output(True)
+                    current_count = 2
 
-            if current == 'tdc':
-                current_point = device.output_current_nom
-                load.staticCurrent(current_point)
-                load.output(True)
-                current_count = 1
-            elif current == 'max':
-                current_point = device.output_current_max
-                load.staticCurrent(current_point)
-                load.output(True)
-                current_count = 2
+                scope.setupChannelPercent('C3',current_point,30)
 
-            scope.setupChannelPercent('C3',current_point,30)
+                scope.captureWaveforms('P1', 100, f'Running Ripple Test.... \n Step: {current} Load' , popup_label)
 
-            scope.captureWaveforms('P1', 100, f'Running Ripple Test.... \n Step: {current} Load' , popup_label)
-
+<<<<<<< Updated upstream
             scope.traceToggle('C2', False)
             scope.traceToggle('C4', False)
             
@@ -394,19 +404,71 @@ def test_ripple_jitter(popup_label, popup_button1, popup_button2, testing_progre
                 scope.captureWaveforms('P6', 2000, f'Running Jitter Test.... \n Step: {current} Load', popup_label )
                 filename = f'08_Jitter_{current}'
 
+=======
 
+                scope.traceToggle('C2', False)
+                scope.traceToggle('C4', False)
+                
+>>>>>>> Stashed changes
+
+                filename = f'01_Vout_{current}'
                 scope.screenshot(device.folder_name_path,filename)
-                p6_min = scope.meas('P6','min')
-                p6_mean = scope.meas('P6','mean')
-                p6_max = scope.meas('P6','max')
-                p5_min = scope.meas('P5','min')
+
+                scope.meas('P1','min')
+
+                p1_min = scope.meas('P1','min')
+                p2_mean = scope.meas('P2','mean')
+                p3_max = scope.meas('P3','max')
+
+                #write_to_csv(filepath, current_count+3, [f'{p1_min}',f'{p2_mean}', f'{p3_max}', f'{filepath}\\{filename}.png'],'Results')
+                write_to_csv(device.folder_name_path, current_count+3, [f'{p3_max}',f'{p2_mean}', f'{p1_min}', f'{device.folder_name_path}\\{filename}.png'],'Results') #Swapped order
+
+                scope.traceToggle('C2', True)
+                scope.traceToggle('C1', False)
+
+                filename = f'04_Vin_{current}'
+                scope.screenshot(device.folder_name_path,filename)
+                p4_min = scope.meas('P4','min')
                 p5_max = scope.meas('P5','max')
-                p5_stdev = scope.meas('P5','sdev')
 
-                write_to_csv(device.folder_name_path, current_count+14, [f'{p6_min}',f'{p6_mean}', f'{p6_max}',f'{p5_min}', f'{p5_max}', f'{p5_stdev}',f'{device.folder_name_path}\\{filename}.png'],'Results')
+                write_to_csv(device.folder_name_path, current_count+8, [f'{p5_max}',f'{p4_min}', f'{device.folder_name_path}\\{filename}.png'],'Results')
 
+<<<<<<< Updated upstream
                 scope.persist(False)
    
+=======
+
+                if device.jitter_bool:
+                    popup_label.config(text = f'Running Jitter Test.... \n Step: {current} Load')
+
+                    scope.traceToggle('C1', False)
+                    scope.traceToggle('C2', False)
+                    scope.traceToggle('C4', True)
+    
+                    scope.persist(True)
+
+                    #scope.setParam('P5','C3','MAX') #Change to max?? Maybe
+                    scope.setParam('P5','C4','DUTY')
+
+                    scope.captureWaveforms('P5', 2000, f'Running Jitter Test.... \n Step: {current} Load', popup_label, 30)
+                    filename = f'08_Jitter_{current}'
+
+
+                    scope.screenshot(device.folder_name_path,filename)
+                    p6_min = scope.meas('P6','min')
+                    p6_mean = scope.meas('P6','mean')
+                    p6_max = scope.meas('P6','max')
+                    p5_min = scope.meas('P5','min')
+                    p5_max = scope.meas('P5','max')
+                    p5_stdev = scope.meas('P5','sdev')
+
+                    write_to_csv(device.folder_name_path, current_count+14, [f'{p6_min}',f'{p6_mean}', f'{p6_max}',f'{p5_min}', f'{p5_max}', f'{p5_stdev}',f'{device.folder_name_path}\\{filename}.png'],'Results')
+
+                    scope.persist(False)
+                    scope.setParam('P5','C2','MAX')
+            except Exception as e:
+                error_update(error_log, popup_label.text, e)
+>>>>>>> Stashed changes
 
             scope.traceToggle('C1', True)
             scope.traceToggle('C2', True)
@@ -426,7 +488,7 @@ def test_ripple_jitter(popup_label, popup_button1, popup_button2, testing_progre
 
 
 
-def test_transient(popup_label, popup_button1, popup_button2, testing_progressbar, scope:SCOPE, supply:SUPPLY, load:LOAD, device:DUT):
+def test_transient(error_log, popup_label, popup_button1, popup_button2, testing_progressbar, scope:SCOPE, supply:SUPPLY, load:LOAD, device:DUT):
     """
     
     Executes transient test as defined in DC DC testing manual
@@ -495,75 +557,51 @@ def test_transient(popup_label, popup_button1, popup_button2, testing_progressba
 
                 popup_label.config(text = f'Running Transient Test... \n Step: {hertz_array[count]}Hz {L1}-{L2_array[L2_count]}%')
 
+<<<<<<< Updated upstream
                 supply.output(False)
                 load.output(False)
+=======
+                try:
+                    load.output(False)
+>>>>>>> Stashed changes
 
-                load.dynamicSetup('H',current_array[L2_count],current_array[L2_count+1], hertz, 'MAX', 0)
+                    load.dynamicSetup('H',current_array[L2_count],current_array[L2_count+1], hertz, 'MAX', 0)
 
+<<<<<<< Updated upstream
                 scope.setupChannel('C3', current_array[L2_count],current_array[L2_count+1])
                 scope.setTrigger('C3','POS', ((2*L2_count)+1)*device.output_current_max/4)
                 
                 supply.output(True)
                 load.output(True)
+=======
+                    scope.setupChannel('C3', current_array[L2_count],current_array[L2_count+1])
+                    scope.setTrigger('C3','POS', ((2*L2_count)+1)*device.output_current_max/4)
+                    
+                    time.sleep(0.3)
+                    load.output(True)
+>>>>>>> Stashed changes
 
-                scope.captureWaveforms('P1', 100, f'Running Transient Test... \n Step: {hertz_array[count]}Hz {L1}-{L2_array[L2_count]}% ', popup_label)
-                filename = f'Trans_vo_{L1}_{L2_array[L2_count]}_{hertz_array[count]}Hz'
-                scope.screenshot(device.folder_name_path,filename)
+                    scope.captureWaveforms('P1', 100, f'Running Transient Test... \n Step: {hertz_array[count]}Hz {L1}-{L2_array[L2_count]}% ', popup_label)
+                    filename = f'Trans_vo_{L1}_{L2_array[L2_count]}_{hertz_array[count]}Hz'
+                    scope.screenshot(device.folder_name_path,filename)
 
-                p1_min = scope.meas('P1','min')
-                p2_mean = scope.meas('P2','mean')
-                p3_max = scope.meas('P3','max')
-
-
-                write_to_csv(device.folder_name_path, 5*L2_count + count + 19, [f'{p3_max}',f'{p2_mean}', f'{p1_min}', f'{device.folder_name_path}\\{filename}.png'],'Results') #swapped order
-
-
-            '''
-
-            popup_label.config(text = f'Running Transient Test... \n Step: {hertz_array[count]}Hz 50-100%')
-
-            load(Load_ID, 'L1', f'{max_current/2}')
-            load(Load_ID, 'L2', f'{max_current}')
-            load(Load_ID, 'T1', f'{tscale}')
-            load(Load_ID, 'T2', f'{tscale}')
-            load(Load_ID, 'RISE', 'MAX')
-            load(Load_ID, 'FALL', 'MAX')
-            load(Load_ID, 'REPEAT', '0')
-            supply(Supply_ID,'OUT','ON')
-            time.sleep(0.5)
-            load(Load_ID, 'OUT', 'ON')
-            scope(Scope_ID,'AUTOSETUP')
-            
-            
-            #time.sleep(0.3)
-            
-            scope_chan(Scope_ID,'C3','TRIGCHANNEL','POS')
-            scope_chan(Scope_ID,'C3','ATTEN','6.03')
-            scope_chan(Scope_ID,'C3','TRIGLEVEL', float((3*max_current)/4)) #3/4 is the current level
-            scope_chan(Scope_ID,'C3','VOFFSET',f'-{float(3*max_current/4)}')
-            scope(Scope_ID,'TDIV',f'{tscale}')
-            time.sleep(0.5) #Actually neccessary
+                    p1_min = scope.meas('P1','min')
+                    p2_mean = scope.meas('P2','mean')
+                    p3_max = scope.meas('P3','max')
 
 
-            capture_waveforms(Scope_ID,'P1', 100, f'Running Transient Test... \n Step: {hertz_array[count]}Hz 50-100%', popup_label)
-            filename = f'Trans_vo_50_100_{hertz_array[count]}Hz'
-            scope_screenshot(filepath,filename)
+                    write_to_csv(device.folder_name_path, 5*L2_count + count + 19, [f'{p3_max}',f'{p2_mean}', f'{p1_min}', f'{device.folder_name_path}\\{filename}.png'],'Results') #swapped order
+                except Exception as e:
+                    error_update(error_log, popup_label.text, e)
 
-
-            p1_min = float(scope_chan(Scope_ID,'P1','MEAS','min'))
-            p2_mean = float(scope_chan(Scope_ID,'P2','MEAS','mean'))
-            p3_max = float(scope_chan(Scope_ID,'P3','MEAS','max'))
-
-            write_to_csv(filepath, count + 24, [f'{p3_max}',f'{p2_mean}', f'{p1_min}', f'{filepath}\\{filename}.png'],'Results')
-
-            count = count+1
-            supply(Supply_ID,'OUT','OFF')
-            load(Load_ID, 'OUT', 'OFF')
-            '''
         
 
-        popup_label.config(text = 'Running Transient Test.... \n Step: Input Voltage')
 
+
+        popup_label.config(text = 'Running Transient Test.... \n Step: Input Voltage')
+        try: 
+
+<<<<<<< Updated upstream
 
         supply.output(False)
         load.output(False)
@@ -583,18 +621,44 @@ def test_transient(popup_label, popup_button1, popup_button2, testing_progressba
 
         supply.output(True)
         load.output(True)
+=======
+            load.output(False)
+>>>>>>> Stashed changes
 
 
-        scope.captureWaveforms('P1', 100, 'Running Transient Test.... \n Step: Input Voltage', popup_label)
-        filename = '16_Vin_trans'
-        scope.screenshot(device.folder_name_path,filename)
+            load.dynamicSetup('H',0, device.output_current_nom, '1k', 'MAX', 0)
 
-        p4_min = scope.meas('P4','min')
-        p5_max = scope.meas('P5','max')
+            scope.setupChannel('C3', 0, device.output_current_nom)
+            scope.setTrigger('C3','POS', device.output_current_nom/4)
 
+<<<<<<< Updated upstream
         write_to_csv(device.folder_name_path, 11, [f'{p5_max}', f'{p4_min}', f'{device.folder_name_path}\\{filename}.png'],'Results')
         supply.output(False)
         load.output(False)
+=======
+            scope.traceToggle('C2',True)
+            scope.setupChannelPercent('C2',device.device_input_voltage, 6)
+            scope.traceToggle('C1',False)
+
+            scope.timeScale('0.5ms')
+
+            time.sleep(0.3)
+            load.output(True)
+
+
+            scope.captureWaveforms('P1', 100, 'Running Transient Test.... \n Step: Input Voltage', popup_label)
+            filename = '16_Vin_trans'
+            scope.screenshot(device.folder_name_path,filename)
+
+            p4_min = scope.meas('P4','min')
+            p5_max = scope.meas('P5','max')
+
+            write_to_csv(device.folder_name_path, 11, [f'{p5_max}', f'{p4_min}', f'{device.folder_name_path}\\{filename}.png'],'Results')
+        except Exception as e:
+            error_update(error_log, popup_label.text, e)
+           
+        discharge(device)
+>>>>>>> Stashed changes
 
 
     set_wait(False)
@@ -605,7 +669,7 @@ def test_transient(popup_label, popup_button1, popup_button2, testing_progressba
 
 
 
-def test_overcurrent(popup_label, popup_button1, popup_button2, testing_progressbar, scope:SCOPE, supply:SUPPLY, load:LOAD, device:DUT):
+def test_overcurrent(error_log, popup_label, popup_button1, popup_button2, testing_progressbar, scope:SCOPE, supply:SUPPLY, load:LOAD, device:DUT):
     """
     
     Executes overcurrent test as defined in DC DC testing manual
@@ -645,13 +709,15 @@ def test_overcurrent(popup_label, popup_button1, popup_button2, testing_progress
 
     def overcurrent_main():
 
+
+
         load.output(False)
         supply.output(True)
 
 
         scope.recall(1)
         supply.setCurrent('MAX')
-  
+
         load.dynamicSetup('H',0, device.output_current_max, 5, 'MIN', 1)
 
         scope.timeScale('20ms')
@@ -691,21 +757,52 @@ def test_overcurrent(popup_label, popup_button1, popup_button2, testing_progress
             elif device.output_current_max>= 10:
                 stepsize = 1
 
+<<<<<<< Updated upstream
+=======
+
+        while True:# and (overcurrent_level < 4*device.output_current_max):    #350W is max of the chroma load. Overpower prot after that
+>>>>>>> Stashed changes
             overcurrent_level = overcurrent_level + stepsize
 
             popup_label.config(text = f'Running Overcurrent Test... \n Current = {overcurrent_level}A')
 
-            load.dynamicLevel('L2', overcurrent_level)
+            try:
 
-            scope.vertScale('C3', overcurrent_level/3)
+                load.dynamicLevel('L2', overcurrent_level)
 
+<<<<<<< Updated upstream
             scope.trigMode('SINGLE')
             load.output(True)
             scope.WAIT()
 
             voltage_level = scope.meas('P1','min')
+=======
+                scope.vertScale('C3', overcurrent_level/3)
 
-        
+                scope.trigMode('SINGLE')
+                time.sleep(0.2)
+                load.output(True)
+                scope.WAIT()
+
+                voltage_level = scope.meas('P1','min')
+                current_level = scope.meas('P5','out')
+
+
+                if voltage_level < float(device.output_voltage_nom*0.9):
+                    oc_reason = 'Voltage < 90%'
+                    break
+                if (overcurrent_level+(2*stepsize)) > load.max_power/device.output_voltage_nom:
+                    oc_reason = 'Max Load Power'
+                    break
+                if current_level < (overcurrent_level*0.7):
+                    oc_reason = 'DUT Current Limiting'
+                    break
+
+            except Exception as e:
+                error_update(error_log, popup_label.text, e)
+
+>>>>>>> Stashed changes
+
         supply.output(False)
         filename = 'OverCurrent'
         scope.screenshot(device.folder_name_path,filename)
@@ -725,7 +822,7 @@ def test_overcurrent(popup_label, popup_button1, popup_button2, testing_progress
 
 
 
-def test_vds(popup_label, popup_button1, popup_button2, testing_progressbar, scope:SCOPE, supply:SUPPLY, load:LOAD, device:DUT):
+def test_vds(error_log, popup_label, popup_button1, popup_button2, testing_progressbar, scope:SCOPE, supply:SUPPLY, load:LOAD, device:DUT):
 
     """
     
@@ -803,60 +900,84 @@ def test_vds(popup_label, popup_button1, popup_button2, testing_progressbar, sco
         for current in current_testing:
             
             popup_label.config(text = f'Running VDS {vdslowhigh} Test.... \n Step : {current} Load')
-            load.output(False)
-            supply.output(True)
 
-            if current == 'min':
-                current_count = 0
-            elif current == 'tdc':
-                load.staticCurrent(device.output_current_nom)
-                load.output(True)
-                current_count = 1
+            try: 
+                load.output(False)
+                supply.output(True)
 
-            #time.sleep(0.3)
-            scope.captureWaveforms('P1', 200, f'Running VDS {vdslowhigh} Test.... \n Step : {current} Load', popup_label)
-            filename = f'VDS_{vdslowhigh}_{current}'
-            scope.screenshot(device.folder_name_path,filename)
+                if current == 'min':
+                    current_count = 0
+                elif current == 'tdc':
+                    load.staticCurrent(device.output_current_nom)
+                    load.output(True)
+                    current_count = 1
 
-            scope.meas('P1','min')
+                #time.sleep(0.3)
+                scope.captureWaveforms('P1', 200, f'Running VDS {vdslowhigh} Test.... \n Step : {current} Load', popup_label)
+                filename = f'VDS_{vdslowhigh}_{current}'
+                scope.screenshot(device.folder_name_path,filename)
 
-            p1_min = scope.meas('P1','min')
-            p2_max = scope.meas('P2','max')
+                scope.meas('P1','min')
 
+<<<<<<< Updated upstream
             p3_mean = scope.meas('P3','mean')
             p4_mean = scope.meas('P4','mean')
 
             write_to_csv(device.folder_name_path, vds_count + current_count+33, [f'{p1_min}',f'{p2_max}', f'{p3_mean}',f'{p4_mean}',f'{device.folder_name_path}\\{filename}.png'],'Results')
             discharge()
+=======
+                p1_min = scope.meas('P1','min')
+                p2_max = scope.meas('P2','max')
+
+                p3_mean = scope.meas('P3','mean', 10**9)
+                p4_mean = scope.meas('P4','mean', 10**9)
+
+                write_to_csv(device.folder_name_path, vds_count + current_count+33, [f'{p1_min}',f'{p2_max}', f'{p3_mean}ns',f'{p4_mean}ns',f'{device.folder_name_path}\\{filename}.png'],'Results')
+                discharge(device)
+            except Exception as e:
+                error_update(error_log, popup_label.text, e)
+>>>>>>> Stashed changes
 
         
-
+       
         if 'transient' in device.load_list:
-            popup_label.config(text = f'Running VDS {vdslowhigh} Test.... \n Step : Transient Load')
+            try:
+                popup_label.config(text = f'Running VDS {vdslowhigh} Test.... \n Step : Transient Load')
+                
+                supply.output(True)
+        
+                time.sleep(0.5)
+
+                load.dynamicSetup('H',0, device.output_current_nom, 10000, 'MAX', 0)
+
+                load.output(True)
             
-            supply.output(True)
-    
-            time.sleep(0.5)
-
-            load.dynamicSetup('H',0, device.output_current_nom, 10000, 'MAX', 0)
-
-            load.output(True)
-          
 
 
-            #time.sleep(0.3)
-            scope.captureWaveforms('P1', 500, f'Running VDS {vdslowhigh} Test.... \n Step : Transient Load', popup_label)
-            filename = f'VDS_{vdslowhigh}_trans'
-            scope.screenshot(device.folder_name_path,filename)
+                #time.sleep(0.3)
+                scope.captureWaveforms('P1', 500, f'Running VDS {vdslowhigh} Test.... \n Step : Transient Load', popup_label)
+                filename = f'VDS_{vdslowhigh}_trans'
+                scope.screenshot(device.folder_name_path,filename)
 
 
+<<<<<<< Updated upstream
             p1_min = scope.meas('P1','min')
             p2_max = scope.meas('P2','max')
 
             p3_min = scope.meas('P3','min')
             p4_min = scope.meas('P4','min')
             write_to_csv(device.folder_name_path,vds_count + 35, [f'{p1_min}',f'{p2_max}', f'{p3_min}',f'{p4_min}',f'{device.folder_name_path}\\{filename}.png'],'Results')
+=======
+                p1_min = scope.meas('P1','min')
+                p2_max = scope.meas('P2','max')
+>>>>>>> Stashed changes
 
+                p3_min = scope.meas('P3','min', 10**9)
+                p4_min = scope.meas('P4','min', 10**9)
+                write_to_csv(device.folder_name_path,vds_count + 35, [f'{p1_min}',f'{p2_max}', f'{p3_min}ns',f'{p4_min}ns',f'{device.folder_name_path}\\{filename}.png'],'Results')
+        
+            except Exception as e:
+                error_update(error_log, popup_label.text, e)
 
         supply.output(False)
 
@@ -877,7 +998,7 @@ def test_vds(popup_label, popup_button1, popup_button2, testing_progressbar, sco
                     
 
 
-def test_deadtime(popup_label, popup_button1, popup_button2, testing_progressbar, scope:SCOPE, supply:SUPPLY, load:LOAD, device:DUT):
+def test_deadtime(error_log, popup_label, popup_button1, popup_button2, testing_progressbar, scope:SCOPE, supply:SUPPLY, load:LOAD, device:DUT):
     """
     
     Executes deadtime test as defined in DC DC testing manual
@@ -947,8 +1068,12 @@ def test_deadtime(popup_label, popup_button1, popup_button2, testing_progressbar
 
     scope.zoomHorMagnify('F1',1)
 
+
+
+
     def deadtime_main():
 
+<<<<<<< Updated upstream
         #If min load is skipped, then full capture is taken at TDC load instead
         supply.output(True)
         if 'min' in device.load_list:
@@ -956,17 +1081,38 @@ def test_deadtime(popup_label, popup_button1, popup_button2, testing_progressbar
         else:
             load.output(True)
 
+=======
+>>>>>>> Stashed changes
         popup_label.config(text = 'Running Deadtime Test.... \n Step: Full')
+        try: 
+            #If min load is skipped, then full capture is taken at TDC load instead
+            supply.output(True)
+            time.sleep(0.3)
+            if 'min' in device.load_list:
+                load.output(False)
+            else:
+                load.output(True)
 
-        
-        time.sleep(3) #Specified delay for turnon
+            c4_width = scope.meas('P6','out',10**9)
+
+            scope.triggerDelay(f'-{c4_width/(2*(10**9))}')
+
+            
+            
+            
+            time.sleep(3) #Specified delay for turnon
 
 
+<<<<<<< Updated upstream
         scope.captureWaveforms('P1', 20, 'Running Deadtime Test.... \n Step: Full', popup_label) #Number reports back as double for some reason
+=======
+            scope.captureWaveforms('P1', 200, 'Running Deadtime Test.... \n Step: Full', popup_label) #Number reports back as double for some reason
+>>>>>>> Stashed changes
 
-        filename = f'Deadtime_Full'
-        scope.screenshot(device.folder_name_path,filename)
+            filename = f'Deadtime_Full'
+            scope.screenshot(device.folder_name_path,filename)
 
+<<<<<<< Updated upstream
         scope.meas('P1','min')
 
         p1_min = scope.meas('P1','min')
@@ -981,30 +1127,58 @@ def test_deadtime(popup_label, popup_button1, popup_button2, testing_progressbar
 
 
         write_to_csv(device.folder_name_path, 4, [f'{p1_min}',f'{p1_mean}',f'{p1_max}',f'{p2_min}',f'{p2_mean}',f'{p2_max}', f'{device.folder_name_path}\\{filename}.png'],'deadtime')
+=======
+            p1_min = scope.meas('P1','min', 10**9)
+            p1_mean = scope.meas('P1','mean', 10**9)
+            p1_max = scope.meas('P1','max', 10**9)
+
+
+            p2_min = scope.meas('P2','min', 10**9)
+            p2_mean = scope.meas('P2','mean', 10**9)
+            p2_max = scope.meas('P2','max', 10**9)
+
+
+
+            write_to_csv(device.folder_name_path, 4, [f'{p1_min}ns',f'{p1_mean}ns',f'{p1_max}ns',f'{p2_min}ns',f'{p2_mean}ns',f'{p2_max}ns', f'{device.folder_name_path}\\{filename}.png'],'deadtime')
+        except Exception as e:
+            error_update(error_log, popup_label.text, e)
+    
+>>>>>>> Stashed changes
 
         current_testing = device.makeLoadPointList('max')
 
         for current in current_testing:
+<<<<<<< Updated upstream
             load.mode('CC','H')
             load.output(False)
             load.staticCurrent(device.output_current_nom)
             supply.output(True)
             capture_mult = 1
+=======
+            try:
+                load.mode('CC','H')
+                load.output(False)
+                load.staticCurrent(device.output_current_nom)
+                supply.output(True)
+                time.sleep(0.3)
+                capture_mult = 1
+>>>>>>> Stashed changes
 
-            if current == 'min':
-                current_count = 0
-            elif current == 'tdc':
-                load.output(True)
-                current_count = 2
-            elif current == 'transient':
-                load.dynamicSetup('H',0, device.output_current_nom,10000,'MAX',0)
-                load.output(True)
-                current_count = 6
-                capture_mult = 5
-            else:
-                print('Incorrect array inputted for current')
+                if current == 'min':
+                    current_count = 0
+                elif current == 'tdc':
+                    load.output(True)
+                    current_count = 2
+                elif current == 'transient':
+                    load.dynamicSetup('H',0, device.output_current_nom,10000,'MAX',0)
+                    load.output(True)
+                    current_count = 6
+                    capture_mult = 5
+                else:
+                    print('Incorrect array inputted for current')
 
 
+<<<<<<< Updated upstream
             for trigger in trig_type:
                 trig_label = 'Full'
                 trig_count = 0
@@ -1020,10 +1194,28 @@ def test_deadtime(popup_label, popup_button1, popup_button2, testing_progressbar
                     scope.setTrigger('C4','NEG',device.device_input_voltage/2)
                     trig_count = 1
                     capture_chan = 'P2'
+=======
+                for trigger in trig_type:
+                    trig_label = 'Full'
+                    trig_count = 0
+                    scope.timeScale(1/(device.frequency*60))
+                    scope.triggerDelay(0)
+                    if trigger =='POS':
+                        trig_label = 'Rise'
+                        scope.setTrigger('C1','POS',trig_level)
+                        trig_count = 0
+                        capture_chan = 'P1'
+                    elif trigger == 'NEG':
+                        trig_label = 'Fall'
+                        scope.setTrigger('C1','NEG',trig_level)
+                        trig_count = 1
+                        capture_chan = 'P2'
+>>>>>>> Stashed changes
 
-                #time.sleep(1)
-                popup_label.config(text = f'Running Deadtime Test.... \n Step: {current} {trig_label}')
+                    #time.sleep(1)
+                    popup_label.config(text = f'Running Deadtime Test.... \n Step: {current} {trig_label}')
 
+<<<<<<< Updated upstream
                 scope.captureWaveforms(capture_chan, capture_mult*20, f'Running Deadtime Test.... \n Step: {current} {trig_label}', popup_label) #Number reports back as double for some reason
 
 
@@ -1041,6 +1233,26 @@ def test_deadtime(popup_label, popup_button1, popup_button2, testing_progressbar
 
                 write_to_csv(device.folder_name_path, 5+current_count+trig_count, [f'{p1_min}',f'{p1_mean}',f'{p1_max}',f'{p2_min}',f'{p2_mean}',f'{p2_max}', f'{device.folder_name_path}\\{filename}.png'],'deadtime')
 
+=======
+                    scope.captureWaveforms(capture_chan, capture_mult*200, f'Running Deadtime Test.... \n Step: {current} {trig_label}', popup_label) #Number reports back as double for some reason
+
+
+                    filename = f'Deadtime_{current}_{trig_label}'
+                    scope.screenshot(device.folder_name_path,filename)
+                    scope.meas('P1','min')
+                    p1_min = scope.meas('P1','min', 10**9)
+                    p1_mean = scope.meas('P1','mean', 10**9)
+                    p1_max = scope.meas('P1','max', 10**9)
+
+                    p2_min = scope.meas('P2','min', 10**9)
+                    p2_mean = scope.meas('P2','mean', 10**9)
+                    p2_max = scope.meas('P2','max', 10**9)
+
+
+                    write_to_csv(device.folder_name_path, 5+current_count+trig_count, [f'{p1_min}ns',f'{p1_mean}ns',f'{p1_max}ns',f'{p2_min}ns',f'{p2_mean}ns',f'{p2_max}ns', f'{device.folder_name_path}\\{filename}.png'],'deadtime')
+            except Exception as e:
+                error_update(error_log, popup_label.text, e)
+>>>>>>> Stashed changes
 
         
         supply.output(False)
@@ -1048,14 +1260,16 @@ def test_deadtime(popup_label, popup_button1, popup_button2, testing_progressbar
         popup_label.config(text = f'Running Deadtime Test.... \n Step: Turn-On ')
 
         #Turn-On Deadtime Test
+        try:
 
-        scope.timeScale(5/device.frequency)
-        scope.triggerDelay(0)
-        load.mode('CC','H')
-        load.staticCurrent(device.output_current_nom)
-        load.output(True)
-        scope.setTrigger('C4','POS',3.3)
+            scope.timeScale(5/device.frequency)
+            scope.triggerDelay(0)
+            load.mode('CC','H')
+            load.staticCurrent(device.output_current_nom)
+            load.output(True)
+            scope.setTrigger('C4','POS',3.3)
 
+<<<<<<< Updated upstream
         scope.trigMode('SINGLE')
         supply.output(True)
         time.sleep(5) #specified 5 sec delay
@@ -1104,6 +1318,68 @@ def test_deadtime(popup_label, popup_button1, popup_button2, testing_progressbar
 
 
         write_to_csv(device.folder_name_path, 17, [f'{p1_min}',f'{p1_mean}',f'{p1_max}',f'{p2_min}',f'{p2_mean}',f'{p2_max}', f'{device.folder_name_path}\\{filename}.png'],'deadtime')
+=======
+            scope.trigMode('SINGLE')
+            supply.output(True)
+            time.sleep(5) #specified 5 sec delay
+            c4_width = scope.meas('P6','out',10**9)
+
+            scope.triggerDelay(f'-{c4_width/(2*(10**9))}')
+
+            filename = f'Deadtime_Turnon'
+            scope.screenshot(device.folder_name_path,filename)
+            p1_min = scope.meas('P1','min', 10**9)
+            p1_mean = scope.meas('P1','mean', 10**9)
+            p1_max = scope.meas('P1','max', 10**9)
+
+            p2_min = scope.meas('P2','min', 10**9)
+            p2_mean = scope.meas('P2','mean', 10**9)
+            p2_max = scope.meas('P2','max', 10**9)
+
+
+
+            write_to_csv(device.folder_name_path, 15, [f'{p1_min}ns',f'{p1_mean}ns',f'{p1_max}ns',f'{p2_min}ns',f'{p2_mean}ns',f'{p2_max}ns', f'{device.folder_name_path}\\{filename}.png'],'deadtime')
+
+            scope.timeScale(1/(55*device.frequency))
+
+            filename = f'Deadtime_Turnon_First'
+            scope.screenshot(device.folder_name_path,filename)
+            p1_min = scope.meas('P1','min', 10**9)
+            p1_mean = scope.meas('P1','mean', 10**9)
+            p1_max = scope.meas('P1','max', 10**9)
+
+            p2_min = scope.meas('P2','min', 10**9)
+            p2_mean = scope.meas('P2','mean', 10**9)
+            p2_max = scope.meas('P2','max', 10**9)
+
+
+            write_to_csv(device.folder_name_path, 16, [f'{p1_min}ns',f'{p1_mean}ns',f'{p1_max}ns',f'{p2_min}ns',f'{p2_mean}ns',f'{p2_max}ns', f'{device.folder_name_path}\\{filename}.png'],'deadtime')
+
+    
+            scope.timeScale(5/(60*device.frequency))
+
+            supply.output(False)
+
+            set_wait(True)
+            test_text = 'Adjust horizontal delay of C1 until second turn-on is visible. Hit Continue when done.'
+            listener(popup_button1, popup_button2, 'disabled', popup_label, test_text, testing_progressbar)
+
+            filename = f'Deadtime_Turnon_Second'
+            scope.screenshot(device.folder_name_path,filename)
+            p1_min = scope.meas('P1','min', 10**9)
+            p1_mean = scope.meas('P1','mean', 10**9)
+            p1_max = scope.meas('P1','max', 10**9)
+
+            p2_min = scope.meas('P2','min', 10**9)
+            p2_mean = scope.meas('P2','mean', 10**9)
+            p2_max = scope.meas('P2','max', 10**9)
+
+
+            write_to_csv(device.folder_name_path, 17, [f'{p1_min}ns',f'{p1_mean}ns',f'{p1_max}ns',f'{p2_min}ns',f'{p2_mean}ns',f'{p2_max}ns', f'{device.folder_name_path}\\{filename}.png'],'deadtime')
+        except Exception as e:
+            error_update(error_log, popup_label.text, e)
+
+>>>>>>> Stashed changes
 
         supply.output(False)
 
@@ -1118,7 +1394,7 @@ def test_deadtime(popup_label, popup_button1, popup_button2, testing_progressbar
 
 
 
-def test_turnonoff(popup_label, popup_button1, popup_button2, testing_progressbar, scope:SCOPE, supply:SUPPLY, load:LOAD, device:DUT):
+def test_turnonoff(error_log, popup_label, popup_button1, popup_button2, testing_progressbar, scope:SCOPE, supply:SUPPLY, load:LOAD, device:DUT):
     """
     
     Executes turn on and turn off tests as defined in DC DC testing manual
@@ -1344,7 +1620,10 @@ def test_turnonoff(popup_label, popup_button1, popup_button2, testing_progressba
     set_wait(True)
     test_text = 'Channel 1: Input Voltage \n Channel 2: VCC Voltage \n Channel 3: Enable \n Channel 4: Output Voltage \n Setup Complete?'
     listener(popup_button1, popup_button2, 'disabled', popup_label, test_text, testing_progressbar)
-    turnon_main()
+    try:
+        turnon_main()
+    except Exception as e:
+        error_update(error_log,'Turn-On Test', e)
 
 
 
@@ -1365,7 +1644,10 @@ def test_turnonoff(popup_label, popup_button1, popup_button2, testing_progressba
     test_text = 'For Power-Button test, hit "Continue" after power button has been pressed. To skip, hit "Skip" '
     listener(popup_button1, popup_button2, 'enabled', popup_label, test_text, testing_progressbar)
 
-    if not get_skip():
-        turnoff_main('ACOnly')
-    else:
-        turnoff_main('Button')
+    try:
+        if not get_skip():
+            turnoff_main('ACOnly')
+        else:
+            turnoff_main('Button')
+    except Exception as e:
+        error_update(error_log,'Turn-Off Test', e)

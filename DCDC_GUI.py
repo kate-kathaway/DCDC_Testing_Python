@@ -55,6 +55,15 @@ def get_variables():
 
         device = DUT()
 
+<<<<<<< Updated upstream
+=======
+        
+        device.dut_type = device_type_var.get()
+        #['Load Switch', 'LDO', 'Converter', 'External Fet Converter']
+
+
+        #Eff, RippleJitter, Transient, Overcurrent, VDS, Deadtime, Turnon-off
+>>>>>>> Stashed changes
         device.test_list.append(EFF_test_var.get())
         device.test_list.append(LDO_test_var.get())
         device.test_list.append(SWM_test_var.get())
@@ -94,7 +103,7 @@ def get_variables():
         if True in current_testing_list_bool:
             pass
         else:
-             raise Exception('No load points selected')
+            raise Exception('No load points selected')
         
 
         for index, value in enumerate(current_testing_list_bool):
@@ -141,6 +150,7 @@ def get_variables():
 
 
 
+<<<<<<< Updated upstream
         if device.test_list[1]:
             rip_test_label.config(background = 'white')
             if transient_load_bool:
@@ -164,14 +174,24 @@ def get_variables():
 
         
         testing_thread = threading.Thread(target=DCDC_main, args = [window, start_test_button, popup_label, popup_button1, popup_button2, testing_progressbar, scope_connection_ID, supply_connection_ID, load_connection_ID, device], daemon=True)
+=======
+        device.user_folder_location = file_entry_var.get()
+        #If no errors, runs the testing thread
+        testing_thread = threading.Thread(target=DCDC_main, args = [window, error_log, start_test_button, popup_label, popup_button1, popup_button2, testing_progressbar, scope_connection_ID, supply_connection_ID, load_connection_ID, device], daemon=True)
+>>>>>>> Stashed changes
         testing_thread.start()
 
 
-
     except Exception as e:
+<<<<<<< Updated upstream
         popup_label.config(text = f'Whoops! Error: \n {e}')
         start_test_button.config(state = 'enabled')
+=======
+        popup_label.config(text = f'Whoops! Try Again. Fatal Error: \n {e}')
+        button_disable(False)
+>>>>>>> Stashed changes
         popup_label.config(background = 'red')
+        
    
 
     
